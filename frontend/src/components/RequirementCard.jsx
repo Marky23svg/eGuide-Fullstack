@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-function RequirementCard({ title, incomplete, steps }) {
+function RequirementCard({ title, incomplete, requirements, steps }) {
   const [open, setOpen] = useState(false)
   const [checked, setChecked] = useState(
     steps.map((_, i) => i < steps.length - incomplete)
@@ -98,24 +98,10 @@ function RequirementCard({ title, incomplete, steps }) {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">What you need</p>
                 <ul className="flex flex-col gap-3">
-                  {steps.map((step, i) => (
-                    <li key={i} className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-2 flex-1">
-                        <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${checked[i] ? 'bg-green-500' : 'bg-blue-400'}`} />
-                        <p className={`text-sm leading-relaxed ${checked[i] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                          {step}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => toggleStep(i)}
-                        className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-lg border transition ${
-                          checked[i]
-                            ? 'bg-green-50 border-green-200 text-green-600 hover:bg-red-50 hover:border-red-200 hover:text-red-400'
-                            : 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100'
-                        }`}
-                      >
-                        {checked[i] ? 'Undo' : 'Mark done'}
-                      </button>
+                  {requirements.map((req, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="mt-1.5 w-2 h-2 rounded-full shrink-0 bg-blue-400" />
+                      <p className="text-sm leading-relaxed text-gray-600">{req}</p>
                     </li>
                   ))}
                 </ul>

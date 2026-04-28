@@ -174,8 +174,8 @@ function Homepage() {
         <div className="relative z-10 flex flex-col items-center text-center px-6 gap-6">
           <h1
             ref={heroTitleRef}
-            className="text-4xl md:text-5xl font-black text-white leading-none uppercase"
-            style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}
+            className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight uppercase text-center px-4"
+            style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}
           >
             Elevating the Experience<br />
             in <span className="text-blue-400">ICCT</span> with Convenience

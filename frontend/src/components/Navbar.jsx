@@ -1,47 +1,49 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import icctLogo from '../assets/Icctlogo.png'
+import { MdMenu, MdClose } from 'react-icons/md'
+import { FiLogOut, FiRepeat } from 'react-icons/fi'
+
+const CARD_TRANSITION = [
+  'width 0.3s cubic-bezier(0.4,0,0.2,1)',
+  'height 0.3s cubic-bezier(0.4,0,0.2,1)',
+  'border-radius 0.3s ease',
+  'background 0.2s ease',
+  'box-shadow 0.3s ease',
+].join(', ')
 
 function Navbar() {
   const navigate = useNavigate()
-
   const [isFixed, setIsFixed] = useState(false)
   const [navVisible, setNavVisible] = useState(true)
   const [isDark, setIsDark] = useState(true)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   const hideTimer = useRef(null)
   const scrolledRef = useRef(false)
   const profileRef = useRef(null)
   const profileOpenRef = useRef(false)
 
-  useEffect(() => {
-    profileOpenRef.current = profileOpen
-  }, [profileOpen])
+  useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 64) {
-        scrolledRef.current = true
-        setIsFixed(true)
-        setNavVisible(false)
-      } else {
-        scrolledRef.current = false
-        setIsFixed(false)
-        setNavVisible(true)
-      }
+      const past = window.scrollY > 64
+      scrolledRef.current = past
+      setIsFixed(past)
+      setNavVisible(!past)
 
-      const lightSections = document.querySelectorAll('[data-nav="light"]')
-      const darkSections = document.querySelectorAll('[data-nav="dark"]')
-      let currentlyDark = true
-      lightSections.forEach((s) => {
+      let dark = true
+      document.querySelectorAll('[data-nav="light"]').forEach((s) => {
         const r = s.getBoundingClientRect()
-        if (r.top <= 80 && r.bottom >= 80) currentlyDark = false
+        if (r.top <= 80 && r.bottom >= 80) dark = false
       })
-      darkSections.forEach((s) => {
+      document.querySelectorAll('[data-nav="dark"]').forEach((s) => {
         const r = s.getBoundingClientRect()
-        if (r.top <= 80 && r.bottom >= 80) currentlyDark = true
+        if (r.top <= 80 && r.bottom >= 80) dark = true
       })
-      setIsDark(currentlyDark)
+      setIsDark(dark)
     }
 
     const handleMouseMove = (e) => {
@@ -74,11 +76,10 @@ function Navbar() {
 
   const textColor = isDark ? 'text-white' : 'text-gray-900'
   const subTextColor = isDark ? 'text-white/60' : 'text-gray-500'
-  const navBg = isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)' : 'transparent'
 
-  const baseCardStyle = {
+  const cardStyle = {
     top: '8px',
-    right: '32px',
+    right: '16px',
     width: profileOpen ? '200px' : '44px',
     height: profileOpen ? '100px' : '44px',
     borderRadius: profileOpen ? '16px' : '50%',
@@ -87,104 +88,93 @@ function Navbar() {
     overflow: 'hidden',
     cursor: profileOpen ? 'default' : 'pointer',
     zIndex: 200,
-    // card grows to the left so icon on right stays visible
     direction: 'rtl',
-    transition: [
-      'width 0.3s cubic-bezier(0.4,0,0.2,1)',
-      'height 0.3s cubic-bezier(0.4,0,0.2,1)',
-      'border-radius 0.3s ease',
-      'background 0.2s ease',
-      'box-shadow 0.3s ease',
-    ].join(', '),
+    transition: CARD_TRANSITION,
   }
+
+  const closeMobile = useCallback(() => setMobileMenuOpen(false), [])
 
   return (
     <>
-      {/* Absolute navbar */}
+      {/* Absolute navbar — visible before scroll */}
       {!isFixed && (
         <div className="absolute top-0 left-0 w-full z-50">
-          <nav className="w-full px-8 py-3 flex items-center justify-between"
+          <nav
+            className="w-full px-4 sm:px-8 py-3 flex items-center justify-between"
             style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)' }}
           >
             <NavLogo textColor="text-white" subTextColor="text-white/60" />
-            <div className="flex items-center gap-10">
+            <div className="hidden md:flex items-center gap-10">
               <NavLinks textColor="text-white" navigate={navigate} />
               <div className="w-10 h-10" />
             </div>
+            <button className="md:hidden text-white p-2" onClick={() => setMobileMenuOpen(o => !o)}>
+              {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+            </button>
           </nav>
+          {mobileMenuOpen && (
+            <div className="md:hidden bg-black/80 backdrop-blur-sm px-6 py-4 flex flex-col gap-4">
+              <NavLinks textColor="text-white" navigate={navigate} onNavigate={closeMobile} />
+            </div>
+          )}
         </div>
       )}
 
-      {/* Fixed navbar */}
+      {/* Fixed navbar — slides in on hover after scroll */}
       {isFixed && (
         <div className="fixed top-0 left-0 w-full z-50">
           <nav
-            className={`w-full px-8 py-3 flex items-center justify-between ${navVisible ? '' : 'pointer-events-none'}`}
+            className={`w-full px-4 sm:px-8 py-3 flex items-center justify-between ${navVisible ? '' : 'pointer-events-none'}`}
             style={{
-              background: navBg,
-              transition: navVisible ? 'opacity 300ms ease, transform 300ms ease' : 'opacity 600ms ease, transform 600ms ease',
+              background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)' : 'transparent',
               transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
               opacity: navVisible ? 1 : 0,
+              transition: navVisible
+                ? 'opacity 300ms ease, transform 300ms ease'
+                : 'opacity 600ms ease, transform 600ms ease',
             }}
           >
             <NavLogo textColor={textColor} subTextColor={subTextColor} />
-            <div className="flex items-center gap-10">
+            <div className="hidden md:flex items-center gap-10">
               <NavLinks textColor={textColor} navigate={navigate} />
               <div className="w-10 h-10" />
             </div>
+            <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
+              {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+            </button>
           </nav>
+          {mobileMenuOpen && (
+            <div className="md:hidden bg-white/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 border-b border-gray-100">
+              <NavLinks textColor="text-gray-800" navigate={navigate} onNavigate={closeMobile} />
+            </div>
+          )}
         </div>
       )}
 
       {/* Profile card */}
       <div ref={profileRef}>
-
-        {/* Variant 1 — absolute, scrolls with page, slides up when leaving */}
         {!isFixed && (
           <div
             onClick={() => !profileOpen && setProfileOpen(true)}
-            style={{
-              position: 'absolute',
-              ...baseCardStyle,
-              transition: [
-                'width 0.3s cubic-bezier(0.4,0,0.2,1)',
-                'height 0.3s cubic-bezier(0.4,0,0.2,1)',
-                'border-radius 0.3s ease',
-                'background 0.2s ease',
-                'box-shadow 0.3s ease',
-              ].join(', '),
-            }}
+            style={{ position: 'absolute', ...cardStyle }}
           >
             <CardContent profileOpen={profileOpen} navigate={navigate} />
           </div>
         )}
-
-        {/* Variant 2 — fixed, slides down on hover exactly like navbar */}
         {isFixed && (
           <div
             onClick={() => !profileOpen && setProfileOpen(true)}
             style={{
               position: 'fixed',
-              ...baseCardStyle,
+              ...cardStyle,
               transform: navVisible ? 'translateY(0)' : 'translateY(-300%)',
-              opacity: 1,
               pointerEvents: navVisible ? 'auto' : 'none',
-              transition: [
-                'width 0.3s cubic-bezier(0.4,0,0.2,1)',
-                'height 0.3s cubic-bezier(0.4,0,0.2,1)',
-                'border-radius 0.3s ease',
-                'background 0.2s ease',
-                'box-shadow 0.3s ease',
-                navVisible
-                  ? 'transform 300ms ease'
-                  : 'transform 900ms ease',
-              ].join(', '),
+              transition: `${CARD_TRANSITION}, ${navVisible ? 'transform 300ms ease' : 'transform 900ms ease'}`,
             }}
           >
             <CardContent profileOpen={profileOpen} navigate={navigate} />
           </div>
         )}
-
       </div>
     </>
   )
@@ -193,7 +183,7 @@ function Navbar() {
 function CardContent({ profileOpen, navigate }) {
   return (
     <>
-      {/* Icon — slides from right to left when card opens */}
+      {/* Avatar icon */}
       <div
         style={{
           position: 'absolute',
@@ -217,7 +207,7 @@ function CardContent({ profileOpen, navigate }) {
         P
       </div>
 
-      {/* Name + email — slides in from left */}
+      {/* Name + email */}
       <div
         style={{
           position: 'absolute',
@@ -235,7 +225,7 @@ function CardContent({ profileOpen, navigate }) {
         <p className="text-xs text-gray-400 whitespace-nowrap mt-0.5">juan@icct.edu.ph</p>
       </div>
 
-      {/* Buttons */}
+      {/* Action buttons */}
       <div
         style={{
           position: 'absolute',
@@ -243,7 +233,6 @@ function CardContent({ profileOpen, navigate }) {
           left: 0,
           right: 0,
           direction: 'ltr',
-          textAlign: 'center',
           borderTop: '1px solid #f3f4f6',
           opacity: profileOpen ? 1 : 0,
           transition: profileOpen ? 'opacity 0.2s ease 0.25s' : 'opacity 0.05s ease',
@@ -251,15 +240,15 @@ function CardContent({ profileOpen, navigate }) {
       >
         <button
           onClick={() => navigate('/')}
-          className="w-full flex items-center justify-center gap-2 px-4 py-1 text-xs text-gray-500 hover:bg-gray-50 transition text-left"
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-gray-500 hover:bg-gray-50 transition"
         >
-          ⇄ Switch Account
+          <FiRepeat size={11} /> Switch Account
         </button>
         <button
           onClick={() => navigate('/')}
-          className="w-full flex items-center justify-center gap-2 px-4 py-1 text-xs text-red-400 hover:bg-red-50 transition text-left"
+          className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-red-400 hover:bg-red-50 transition"
         >
-          → Log Out
+          <FiLogOut size={11} /> Log Out
         </button>
       </div>
     </>
@@ -270,14 +259,16 @@ function NavLogo({ textColor, subTextColor }) {
   return (
     <div className="flex items-center gap-3">
       <img src={icctLogo} alt="ICCT Logo" className="h-12 w-12 rounded-full object-cover border-2 border-white/30" />
-      <div className="flex flex-col leading-none gap-0">
-        <span className={`text-2xl block w-full ${textColor}`}
-          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.08em', lineHeight: '1' }}
+      <div className="flex flex-col leading-none">
+        <span
+          className={`text-2xl block ${textColor}`}
+          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.08em', lineHeight: 1 }}
         >
           ICCT
         </span>
-        <span className={`text-xs uppercase block w-full ${subTextColor}`}
-          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.05em', lineHeight: '1' }}
+        <span
+          className={`text-xs uppercase block ${subTextColor}`}
+          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.05em', lineHeight: 1 }}
         >
           COLLEGES
         </span>
@@ -286,20 +277,34 @@ function NavLogo({ textColor, subTextColor }) {
   )
 }
 
-function NavLinks({ textColor, navigate }) {
+function NavLinks({ textColor, navigate, onNavigate }) {
   const isHomepage = window.location.pathname === '/home'
 
+  const handleAnnouncement = () => {
+    if (isHomepage) {
+      document.getElementById('announcements')?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      navigate('/home#announcements')
+    }
+    onNavigate?.()
+  }
+
+  const handleRequirements = () => {
+    navigate('/requirements')
+    onNavigate?.()
+  }
+
   return (
-    <div className="flex items-center gap-10">
+    <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-10">
       <span
-        onClick={() => isHomepage ? document.getElementById('announcements')?.scrollIntoView({ behavior: 'smooth' }) : navigate('/home#announcements')}
+        onClick={handleAnnouncement}
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
         style={{ letterSpacing: '0.2em' }}
       >
         Announcement
       </span>
       <span
-        onClick={() => navigate('/requirements')}
+        onClick={handleRequirements}
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
         style={{ letterSpacing: '0.2em' }}
       >
