@@ -8,10 +8,7 @@ import { FaEye, FaEyeSlash } from 'react-icons/fa'
 function Login() {
   const navigate = useNavigate()
 
-  // activeTab controls which form is shown — 'login', 'signup', or 'forgot'
   const [activeTab, setActiveTab] = useState('login')
-
-  // forgotStep controls the forgot password flow — 'email', 'code', 'reset'
   const [forgotStep, setForgotStep] = useState('email')
 
   // Password visibility toggles
@@ -38,7 +35,6 @@ function Login() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
-  // Runs when login form is submitted
   const handleLogin = (e) => {
     e.preventDefault()
     console.log('Login:', { email, password })
