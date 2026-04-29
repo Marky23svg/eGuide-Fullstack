@@ -9,10 +9,7 @@ import API from '../services/api'
 function Login() {
   const navigate = useNavigate()
 
-  // activeTab controls which form is shown — 'login', 'signup', or 'forgot'
   const [activeTab, setActiveTab] = useState('login')
-
-  // forgotStep controls the forgot password flow — 'email', 'code', 'reset'
   const [forgotStep, setForgotStep] = useState('email')
 
   // Password visibility toggles
@@ -39,23 +36,31 @@ function Login() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
 
+  // Feedback messages
+  const [loginError, setLoginError] = useState('')
+  const [signupError, setSignupError] = useState('')
+  const [signupSuccess, setSignupSuccess] = useState('')
+
   // Runs when login form is submitted - CONNECTED TO BACKEND
   const handleLogin = async (e) => {
     e.preventDefault()
+    setLoginError('')
     console.log('1. Login button clicked')
     console.log('2. Email:', email)
     console.log('3. Password:', password)
-    
+
     try {
       console.log('4. Calling API...')
       const response = await API.post('/auth/login', { email, password })
       console.log('5. Response received:', response)
-      
+
       if (response.success) {
         console.log('6. Login successful!')
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
-        
+        // Store token in sessionStorage (cleared when tab closes)
+        // For stronger security, request your backend to set an httpOnly cookie instead
+        sessionStorage.setItem('token', response.token)
+        sessionStorage.setItem('user', JSON.stringify(response.user))
+
         console.log('7. Redirecting...')
         if (response.user.role === 'admin') {
           navigate('/admin-dashboard')
@@ -65,20 +70,21 @@ function Login() {
       }
     } catch (error) {
       console.error('ERROR:', error)
-      alert('Login failed: ' + (error.response?.data?.message || error.message))
+      setLoginError('Login failed: ' + (error.response?.data?.message || error.message))
     }
-}
+  }
 
   // Runs when sign up form is submitted - CONNECTED TO BACKEND
   const handleSignUp = async (e) => {
     e.preventDefault()
-    
-    // Check if passwords match
+    setSignupError('')
+    setSignupSuccess('')
+
     if (regPassword !== regConfirm) {
-      alert('Passwords do not match!')
+      setSignupError('Passwords do not match!')
       return
     }
-    
+
     try {
       const response = await API.post('/auth/signup', {
         name: regName,
@@ -86,15 +92,12 @@ function Login() {
         password: regPassword,
         role: 'student'
       })
-      
+
       if (response.success) {
         console.log('Signup successful!', response.user)
-        alert('Account created successfully! Please login.')
-        
-        // Switch to login tab
+        setSignupSuccess('Account created successfully! Please login.')
+
         setActiveTab('login')
-        
-        // Clear signup form
         setRegName('')
         setRegStudentNo('')
         setRegEmail('')
@@ -103,7 +106,7 @@ function Login() {
       }
     } catch (error) {
       console.error('Signup failed:', error.response?.data?.message || error.message)
-      alert('Signup failed: ' + (error.response?.data?.message || 'Email may already exist'))
+      setSignupError('Signup failed: ' + (error.response?.data?.message || 'Email may already exist'))
     }
   }
 
@@ -174,6 +177,8 @@ function Login() {
         {/* Log In form */}
         {activeTab === 'login' && (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            {loginError && <p className="text-xs text-red-500 text-center">{loginError}</p>}
+            {signupSuccess && <p className="text-xs text-green-500 text-center">{signupSuccess}</p>}
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
@@ -238,6 +243,7 @@ function Login() {
         {/* Sign Up form */}
         {activeTab === 'signup' && (
           <form onSubmit={handleSignUp} className="flex flex-col gap-4">
+            {signupError && <p className="text-xs text-red-500 text-center">{signupError}</p>}
             <div>
               <label className="block text-sm font-medium mb-1">Full Name</label>
               <input

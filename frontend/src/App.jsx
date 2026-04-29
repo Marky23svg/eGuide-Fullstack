@@ -4,6 +4,9 @@ import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
 import Homepage from './Pages/Homepage'
 import Requirements from './Pages/Requirements'
+import AdminDashboard from './Pages/Admin/AdminDashboard'
+import AdminAnnouncements from './Pages/Admin/AdminAnnouncements'
+import AdminRequirements from './Pages/Admin/AdminRequirements'
 
 // Simple protected route component
 function PrivateRoute({ children }) {
@@ -29,6 +32,7 @@ function App() {
         } />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+<<<<<<< HEAD
         
         {/* Protected routes - require login */}
         <Route path="/home" element={
@@ -41,6 +45,11 @@ function App() {
             <Requirements />
           </PrivateRoute>
         } />
+=======
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/admin/requirements" element={<AdminRequirements />} />
+>>>>>>> 2e1cc28a48ec12991b5e6bc1646b064ea1c3680c
       </Routes>
     </BrowserRouter>
   )
