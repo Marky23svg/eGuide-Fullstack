@@ -2,49 +2,7 @@ import { useState, useCallback } from 'react'
 import AdminLayout from './AdminLayout'
 import { MdClose, MdChevronRight, MdExpandMore } from 'react-icons/md'
 
-const INITIAL_REQUIREMENTS = [
-  {
-    id: 1,
-    title: 'Transcript of Records (TOR)',
-    requirements: [
-      'Original PSA Birth Certificate',
-      'Valid school ID or government-issued ID',
-      'Official Receipt of payment',
-      'Accomplished request form',
-    ],
-    steps: [
-      "Fill out the request form at the Registrar's Office",
-      'Submit a valid school ID',
-      'Pay the processing fee at the cashier',
-      'Present the official receipt',
-      'Wait for evaluation',
-      'Claim the TOR after 5-7 working days',
-      'Have the TOR signed by the Registrar',
-      'Request for dry seal if needed',
-      'Receive the final TOR in a sealed envelope',
-    ],
-  },
-  {
-    id: 2,
-    title: 'Certificate of Enrollment (COE)',
-    requirements: [
-      'Valid school ID',
-      'Accomplished COE request form',
-      'Official Receipt of payment',
-    ],
-    steps: [
-      "Proceed to the Registrar's Office",
-      'Fill out the COE request form',
-      'Present your school ID',
-      'Pay the processing fee',
-      'Submit the official receipt',
-      'Wait for 1-2 working days',
-      "Claim the COE at the Registrar's window",
-      'Check the details for accuracy',
-      'Have it signed and stamped',
-    ],
-  },
-]
+const INITIAL_REQUIREMENTS = []
 
 const EMPTY_FORM = { title: '', requirements: '', steps: '' }
 
