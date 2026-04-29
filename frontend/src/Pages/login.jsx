@@ -69,7 +69,7 @@ function Login() {
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center w-full">
+    <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden">
 
       {/* Blurred background image */}
       <div
