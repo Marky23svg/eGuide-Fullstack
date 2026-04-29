@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    resetCode: {
+        type: String,
+        default: null
+    },
+    resetCodeExpires: {
+        type: Date,
+        default: null
     }
 });
 

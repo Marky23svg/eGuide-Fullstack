@@ -32,7 +32,6 @@ function App() {
         } />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
-<<<<<<< HEAD
         
         {/* Protected routes - require login */}
         <Route path="/home" element={
@@ -45,11 +44,23 @@ function App() {
             <Requirements />
           </PrivateRoute>
         } />
-=======
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-        <Route path="/admin/requirements" element={<AdminRequirements />} />
->>>>>>> 2e1cc28a48ec12991b5e6bc1646b064ea1c3680c
+        
+        {/* Admin routes - protected */}
+        <Route path="/admin" element={
+          <PrivateRoute>
+            <AdminDashboard />
+          </PrivateRoute>
+        } />
+        <Route path="/admin/announcements" element={
+          <PrivateRoute>
+            <AdminAnnouncements />
+          </PrivateRoute>
+        } />
+        <Route path="/admin/requirements" element={
+          <PrivateRoute>
+            <AdminRequirements />
+          </PrivateRoute>
+        } />
       </Routes>
     </BrowserRouter>
   )

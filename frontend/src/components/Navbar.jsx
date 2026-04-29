@@ -25,6 +25,13 @@ function Navbar() {
   const profileRef = useRef(null)
   const profileOpenRef = useRef(false)
 
+  // Logout function - THIS IS THE FIX
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/')
+  }
+
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
   useEffect(() => {
@@ -158,7 +165,7 @@ function Navbar() {
             onClick={() => !profileOpen && setProfileOpen(true)}
             style={{ position: 'absolute', ...cardStyle }}
           >
-            <CardContent profileOpen={profileOpen} navigate={navigate} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
           </div>
         )}
         {isFixed && (
@@ -172,7 +179,7 @@ function Navbar() {
               transition: `${CARD_TRANSITION}, ${navVisible ? 'transform 300ms ease' : 'transform 900ms ease'}`,
             }}
           >
-            <CardContent profileOpen={profileOpen} navigate={navigate} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
           </div>
         )}
       </div>
@@ -180,7 +187,13 @@ function Navbar() {
   )
 }
 
-function CardContent({ profileOpen, navigate }) {
+function CardContent({ profileOpen, onLogout }) {
+  // Get user data from localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const userName = user.name || 'Guest'
+  const userEmail = user.email || 'guest@icct.edu.ph'
+  const userInitial = userName.charAt(0) || 'U'
+
   return (
     <>
       {/* Avatar icon */}
@@ -204,7 +217,7 @@ function CardContent({ profileOpen, navigate }) {
           zIndex: 2,
         }}
       >
-        P
+        {userInitial}
       </div>
 
       {/* Name + email */}
@@ -221,8 +234,8 @@ function CardContent({ profileOpen, navigate }) {
           transition: profileOpen ? 'opacity 0.2s ease 0.2s' : 'opacity 0.05s ease',
         }}
       >
-        <p className="text-sm font-bold text-gray-800 leading-tight whitespace-nowrap">Juan Dela Cruz</p>
-        <p className="text-xs text-gray-400 whitespace-nowrap mt-0.5">juan@icct.edu.ph</p>
+        <p className="text-sm font-bold text-gray-800 leading-tight whitespace-nowrap">{userName}</p>
+        <p className="text-xs text-gray-400 whitespace-nowrap mt-0.5">{userEmail}</p>
       </div>
 
       {/* Action buttons */}
@@ -239,13 +252,13 @@ function CardContent({ profileOpen, navigate }) {
         }}
       >
         <button
-          onClick={() => navigate('/')}
+          onClick={onLogout}
           className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-gray-500 hover:bg-gray-50 transition"
         >
           <FiRepeat size={11} /> Switch Account
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={onLogout}
           className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-red-400 hover:bg-red-50 transition"
         >
           <FiLogOut size={11} /> Log Out

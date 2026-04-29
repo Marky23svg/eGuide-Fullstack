@@ -40,6 +40,9 @@ function Login() {
   const [loginError, setLoginError] = useState('')
   const [signupError, setSignupError] = useState('')
   const [signupSuccess, setSignupSuccess] = useState('')
+  const [forgotError, setForgotError] = useState('')
+  const [forgotSuccess, setForgotSuccess] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   // Runs when login form is submitted - CONNECTED TO BACKEND
   const handleLogin = async (e) => {
@@ -58,9 +61,8 @@ function Login() {
         console.log('6. Login successful!')
         // Store token in sessionStorage (cleared when tab closes)
         // For stronger security, request your backend to set an httpOnly cookie instead
-        sessionStorage.setItem('token', response.token)
-        sessionStorage.setItem('user', JSON.stringify(response.user))
-
+        localStorage.setItem('token', response.token)
+localStorage.setItem('user', JSON.stringify(response.user))
         console.log('7. Redirecting...')
         if (response.user.role === 'admin') {
           navigate('/admin-dashboard')
@@ -111,25 +113,66 @@ function Login() {
   }
 
   // Step 1 — sends code to email
-  const handleForgotEmail = (e) => {
+  const handleForgotEmail = async (e) => {
     e.preventDefault()
-    console.log('Send code to:', forgotEmail)
-    setForgotStep('code')
+    setForgotError('')
+    setForgotSuccess('')
+    setForgotLoading(true)
+    try {
+      await API.post('/auth/forgot-password', { email: forgotEmail })
+      setForgotSuccess('Reset code sent! Check your email.')
+      setForgotStep('code')
+    } catch (error) {
+      setForgotError(error.message || 'No account found with this email')
+    } finally {
+      setForgotLoading(false)
+    }
   }
 
   // Step 2 — verifies the code sent to email
-  const handleForgotCode = (e) => {
+  const handleForgotCode = async (e) => {
     e.preventDefault()
-    console.log('Verify code:', forgotCode)
-    setForgotStep('reset')
+    setForgotError('')
+    setForgotSuccess('')
+    setForgotLoading(true)
+    console.log('Verifying code:', forgotCode, 'for email:', forgotEmail)
+    try {
+      const res = await API.post('/auth/verify-reset-code', { email: forgotEmail, code: forgotCode })
+      console.log('Verify response:', res)
+      if (res.success) {
+        setForgotStep('reset')
+      } else {
+        setForgotError('Invalid or expired reset code')
+      }
+    } catch (error) {
+      console.log('Verify error full:', JSON.stringify(error))
+      setForgotError(error.message || 'Invalid or expired reset code')
+    } finally {
+      setForgotLoading(false)
+    }
   }
 
   // Step 3 — resets the password
-  const handleResetPassword = (e) => {
+  const handleResetPassword = async (e) => {
     e.preventDefault()
-    console.log('New password:', newPassword)
-    setActiveTab('login')
-    setForgotStep('email')
+    setForgotError('')
+    setForgotSuccess('')
+    setForgotLoading(true)
+    if (newPassword !== confirmNewPassword) {
+      setForgotError('Passwords do not match!')
+      setForgotLoading(false)
+      return
+    }
+    try {
+      await API.post('/auth/reset-password', { email: forgotEmail, code: forgotCode, newPassword })
+      setActiveTab('login')
+      setForgotStep('email')
+      setSignupSuccess('Password reset successfully! Please log in.')
+    } catch (error) {
+      setForgotError(error.message || 'Failed to reset password')
+    } finally {
+      setForgotLoading(false)
+    }
   }
 
   return (
@@ -351,6 +394,8 @@ function Login() {
                   <p className="font-semibold text-gray-700">Forgot Password</p>
                   <p className="text-xs text-gray-400">Enter your email and we'll send you a code</p>
                 </div>
+                {forgotError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{forgotError}</p>}
+                {forgotSuccess && <p className="text-xs text-green-500 text-center bg-green-50 border border-green-200 rounded p-2">{forgotSuccess}</p>}
                 <form onSubmit={handleForgotEmail} className="flex flex-col gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Email</label>
@@ -365,9 +410,10 @@ function Login() {
                   </div>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
+                    disabled={forgotLoading}
+                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Code
+                    {forgotLoading ? 'Sending...' : 'Send Code'}
                   </button>
                 </form>
               </>
@@ -380,6 +426,7 @@ function Login() {
                   <p className="font-semibold text-gray-700">Enter Code</p>
                   <p className="text-xs text-gray-400">We sent a code to <span className="text-blue-500">{forgotEmail}</span></p>
                 </div>
+                {forgotError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{forgotError}</p>}
                 <form onSubmit={handleForgotCode} className="flex flex-col gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Verification Code</label>
@@ -394,9 +441,10 @@ function Login() {
                   </div>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
+                    disabled={forgotLoading}
+                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Verify Code
+                    {forgotLoading ? 'Verifying...' : 'Verify Code'}
                   </button>
                 </form>
               </>
@@ -444,9 +492,10 @@ function Login() {
                   </div>
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
+                    disabled={forgotLoading}
+                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Reset Password
+                    {forgotLoading ? 'Resetting...' : 'Reset Password'}
                   </button>
                 </form>
               </>
