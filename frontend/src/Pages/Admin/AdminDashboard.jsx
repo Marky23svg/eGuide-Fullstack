@@ -3,8 +3,8 @@ import { FaBullhorn, FaClipboardList, FaUsers, FaEnvelope } from 'react-icons/fa
 
 function AdminDashboard() {
   const stats = [
-    { label: 'Total Announcements', value: '4', icon: <FaBullhorn />, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Total Requirements', value: '12', icon: <FaClipboardList />, color: 'bg-green-50 text-green-600' },
+    { label: 'Total Announcements', value: '0', icon: <FaBullhorn />, color: 'bg-blue-50 text-blue-600' },
+    { label: 'Total Requirements', value: '0', icon: <FaClipboardList />, color: 'bg-green-50 text-green-600' },
     { label: 'Total Students', value: '—', icon: <FaUsers />, color: 'bg-purple-50 text-purple-600' },
     { label: 'Pending Emails', value: '—', icon: <FaEnvelope />, color: 'bg-orange-50 text-orange-600' },
   ]

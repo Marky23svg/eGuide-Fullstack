@@ -10,53 +10,8 @@ import innerArrow from '../assets/InnerArrow.svg'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Mock announcements — replace with API data later
-const announcements = [
-  {
-    id: 1,
-    title: 'Enrollment for 2nd Semester',
-    date: 'June 1, 2025',
-    category: 'Enrollment',
-    description: 'Enrollment for the second semester will begin on June 10. Please prepare all your requirements.',
-    fullDetails: 'Enrollment for the second semester will begin on June 10, 2025. All students are required to settle their outstanding balances before enrolling. Enrollment will be done online through the student portal.',
-    requirements: ['Previous semester grades', 'Clearance form', 'Assessment form', '2x2 ID photo', 'Proof of payment'],
-    image: 'https://placehold.co/600x400/1d4ed8/ffffff?text=Enrollment',
-    actionButton: { label: 'Register via Google Form', url: 'https://forms.google.com' },
-  },
-  {
-    id: 2,
-    title: 'Midterm Examination Schedule',
-    date: 'May 28, 2025',
-    category: 'Examination',
-    description: 'The midterm examination schedule has been officially released. Check your department for the complete schedule.',
-    fullDetails: 'Examinations will be held from June 15-20, 2025. No permit, no exam policy will be strictly enforced. Late students will not be allowed entry after 15 minutes.',
-    requirements: ['School ID', 'Exam permit', 'Blue or black ballpen only', 'Mobile phones must be turned off'],
-    image: 'https://placehold.co/600x400/0f172a/ffffff?text=Midterms',
-    actionButton: null,
-  },
-  {
-    id: 3,
-    title: 'Holiday Class Suspension Notice',
-    date: 'May 25, 2025',
-    category: 'Notice',
-    description: 'All classes are suspended on June 12 in observance of Philippine Independence Day.',
-    fullDetails: 'All classes and office operations are suspended on June 12, 2025. Regular class schedules and office hours will resume on June 13, 2025.',
-    requirements: [],
-    image: 'https://placehold.co/600x400/15803d/ffffff?text=Holiday',
-    actionButton: null,
-  },
-  {
-    id: 4,
-    title: 'Graduation Requirements Submission',
-    date: 'June 5, 2025',
-    category: 'Graduation',
-    description: 'All graduating students must submit their graduation requirements on or before June 20.',
-    fullDetails: 'Submission deadline is June 20, 2025. Late submissions will not be entertained. Please submit all requirements to the Registrar\'s Office.',
-    requirements: ['Transcript of Records', 'Clearance from all departments', 'Accomplished graduation application form', '4 pcs 2x2 ID photos (white background)', 'Proof of payment for graduation fee'],
-    image: 'https://placehold.co/600x400/7e22ce/ffffff?text=Graduation',
-    actionButton: { label: 'View Graduation Requirements', url: '#requirements' },
-  },
-]
+// Replace with API data when backend is ready
+const announcements = []
 
 function Homepage() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
@@ -209,7 +164,9 @@ function Homepage() {
           Latest <span className="text-blue-600">Announcements</span>
         </h2>
 
-        {announcements.map((item, index) => (
+        {announcements.length === 0 ? (
+          <p className="text-center text-gray-400 text-sm py-10">No announcements yet.</p>
+        ) : announcements.map((item, index) => (
           <div
             key={item.id}
             ref={el => announcementRowsRef.current[index] = el}
@@ -217,12 +174,9 @@ function Homepage() {
               index % 2 !== 0 ? 'md:flex-row-reverse' : ''
             }`}
           >
-            {/* Feature image */}
             <div className="anim-image w-full md:w-1/2 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
               <img src={item.image} alt={item.title} className="w-full h-64 object-cover" />
             </div>
-
-            {/* Text content */}
             <div className="anim-text w-full md:w-1/2 flex flex-col gap-4">
               <span className="text-xs font-semibold text-blue-600 uppercase tracking-widest">{item.category}</span>
               <h3 className="text-2xl font-black text-gray-800 leading-tight">{item.title}</h3>
@@ -232,10 +186,8 @@ function Homepage() {
                 <CTAButton label="READ MORE" />
               </div>
             </div>
-
           </div>
         ))}
-
       </section>
 
       <Footer ref={footerRef} />

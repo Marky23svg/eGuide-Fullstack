@@ -2,32 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import AdminLayout from './AdminLayout'
 import { MdImage, MdUpload, MdClose, MdVisibility, MdEdit, MdCheckCircle, MdMail } from 'react-icons/md'
 
-const INITIAL_ANNOUNCEMENTS = [
-  {
-    id: 1,
-    title: 'Enrollment for 2nd Semester',
-    category: 'Enrollment',
-    date: 'June 1, 2025',
-    description: 'Enrollment for the second semester will begin on June 10.',
-    fullDetails: 'Full details here...',
-    requirements: ['Previous semester grades', 'Clearance form'],
-    image: '',
-    actionButton: { label: 'Register via Google Form', url: 'https://forms.google.com' },
-    emailNotification: true,
-  },
-  {
-    id: 2,
-    title: 'Midterm Examination Schedule',
-    category: 'Examination',
-    date: 'May 28, 2025',
-    description: 'The midterm examination schedule has been officially released.',
-    fullDetails: 'Full details here...',
-    requirements: ['School ID', 'Exam permit'],
-    image: '',
-    actionButton: null,
-    emailNotification: false,
-  },
-]
+const INITIAL_ANNOUNCEMENTS = []
 
 const EMPTY_FORM = {
   title: '',
