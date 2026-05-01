@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API = axios.create({
     baseURL: 'http://localhost:5001/api',
-    timeout: 10000,
+    timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -11,7 +11,7 @@ const API = axios.create({
 // Auto-add token to every request
 API.interceptors.request.use(
     (config) => {
-        const token = sessionStorage.getItem('token');
+        const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -30,8 +30,8 @@ API.interceptors.response.use(
         
         // Only redirect for 401 errors on NON-auth endpoints
         if (error.response?.status === 401 && !isAuthRequest) {
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('user');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.href = '/';  // ← Redirect to root (login page)
         }
         

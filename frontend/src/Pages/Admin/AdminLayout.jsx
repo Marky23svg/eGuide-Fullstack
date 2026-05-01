@@ -83,7 +83,7 @@ function AdminLayout({ children, activePage }) {
         {/* Bottom actions */}
         <div className="p-2 border-t border-white/10 flex flex-col gap-1">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/') }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition"
           >
             <MdLogout size={18} className="shrink-0" />

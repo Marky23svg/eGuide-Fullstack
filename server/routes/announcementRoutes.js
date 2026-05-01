@@ -38,8 +38,6 @@ router.post('/', protect, adminOnly, async (req, res) => {
     try {
         const { title, content } = req.body;
         
-        console.log('1. Create announcement request received');  // DEBUG
-        
         if (!title || !content) {
             return res.status(400).json({ 
                 success: false, 
@@ -47,41 +45,21 @@ router.post('/', protect, adminOnly, async (req, res) => {
             });
         }
         
-        console.log('2. Creating announcement...');
-        
-        // Create the announcement
         const announcement = await Announcement.create({ title, content });
-        
-        console.log('3. Announcement created, ID:', announcement._id);
-        
-        // Get all students
-        console.log('4. Fetching students...');
         const students = await User.find({ role: 'student' }).select('email name');
-        console.log('5. Found', students.length, 'students');
         
-        // Send emails if there are students
+        // Send emails in background - don't await so response is immediate
         if (students.length > 0) {
-            console.log('6. Sending emails...');
-            try {
-                const result = await sendAnnouncementEmail(students, announcement);
-                console.log('7. Email result:', result.success ? 'SUCCESS' : 'FAILED');
-                if (result.success) {
-                    console.log(`✅ Email sent to ${students.length} students`);
-                } else {
-                    console.error('❌ Email error:', result.error);
-                }
-            } catch (emailError) {
-                console.error('❌ Email send error:', emailError.message);
-            }
+            sendAnnouncementEmail(students, announcement)
+                .then(result => console.log(result.success ? `✅ Emails sent to ${students.length} students` : `❌ Email error: ${result.error}`))
+                .catch(err => console.error('❌ Email send error:', err.message))
         } else {
-            console.log('📭 No students found to send emails to');
+            console.log('📭 No students found to send emails to')
         }
-        
-        console.log('8. Sending response...');
         
         res.status(201).json({
             success: true,
-            message: 'Announcement created successfully' + (students.length > 0 ? '. Emails sent!' : '. No students to notify.'),
+            message: 'Announcement created successfully' + (students.length > 0 ? '. Emails will be sent!' : '. No students to notify.'),
             data: announcement
         });
     } catch (error) {

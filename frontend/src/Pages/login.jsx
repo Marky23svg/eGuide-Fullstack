@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import loginBg from '../assets/Login_bg.png'
-import googleIcon from '../assets/google.svg'
-import facebookIcon from '../assets/facebook.svg'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import API from '../services/api'
 
@@ -65,7 +63,7 @@ function Login() {
 localStorage.setItem('user', JSON.stringify(response.user))
         console.log('7. Redirecting...')
         if (response.user.role === 'admin') {
-          navigate('/admin-dashboard')
+          navigate('/admin')
         } else {
           navigate('/home')
         }
@@ -256,30 +254,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
             >
               Log In
             </button>
-
-            {/* Divider line with OR text */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 border-t border-gray-300" />
-              <span className="text-xs text-gray-400">or</span>
-              <div className="flex-1 border-t border-gray-300" />
-            </div>
-
-            {/* Social login buttons */}
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 rounded-lg py-2 text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500 transition shadow-[0_4px_6px_rgba(0,0,0,0.08)]"
-            >
-              <img src={googleIcon} alt="Google" className="w-5 h-5" />
-              Continue with Google
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 rounded-lg py-2 text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500 transition shadow-[0_4px_6px_rgba(0,0,0,0.08)]"
-            >
-              <img src={facebookIcon} alt="Facebook" className="w-5 h-5" />
-              Continue with Facebook
-            </button>
           </form>
         )}
 
@@ -348,38 +322,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
             >
               Sign Up
             </button>
-
-            {/* Divider line with OR text */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 border-t border-gray-300" />
-              <span className="text-xs text-gray-400">or</span>
-              <div className="flex-1 border-t border-gray-300" />
-            </div>
-
-            {/* Social sign up buttons */}
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 rounded-lg py-2 text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500 transition shadow-[0_4px_6px_rgba(0,0,0,0.08)]"
-            >
-              <img src={googleIcon} alt="Google" className="w-5 h-5" />
-              Continue with Google
-            </button>
-
-            <button
-              type="button"
-              className="flex items-center justify-center gap-2 w-full border-2 border-gray-300 rounded-lg py-2 text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-500 transition shadow-[0_4px_6px_rgba(0,0,0,0.08)]"
-            >
-              <img src={facebookIcon} alt="Facebook" className="w-5 h-5" />
-              Continue with Facebook
-            </button>
-
-            <div className="border-t border-gray-200" />
-            <p className="text-xs text-center text-gray-400">
-              By signing up, you agree to our{' '}
-              <span onClick={() => navigate('/terms')} className="text-blue-500 cursor-pointer hover:underline">Terms of Service</span>{' '}
-              and{' '}
-              <span onClick={() => navigate('/privacy')} className="text-blue-500 cursor-pointer hover:underline">Privacy Policy</span>
-            </p>
           </form>
         )}
 

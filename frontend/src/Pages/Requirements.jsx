@@ -1,12 +1,20 @@
+import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import RequirementCard from '../components/RequirementCard'
 import requirementBg from '../assets/Requirement_bg.png'
-
-// Replace with API data when backend is ready
-const requirementCards = []
+import API from '../services/api'
 
 function Requirements() {
+  const [requirements, setRequirements] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    API.get('/requirements')
+      .then(res => setRequirements(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar />
@@ -27,17 +35,18 @@ function Requirements() {
 
       {/* Cards Grid */}
       <div className="max-w-6xl mx-auto px-8 py-12">
-        {requirementCards.length === 0 ? (
+        {loading ? (
+          <p className="text-center text-gray-400 text-sm py-10">Loading...</p>
+        ) : requirements.length === 0 ? (
           <p className="text-center text-gray-400 text-sm py-10">No requirements yet.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {requirementCards.map((card) => (
+            {requirements.map((item) => (
               <RequirementCard
-                key={card.id}
-                title={card.title}
-                incomplete={card.incomplete}
-                requirements={card.requirements}
-                steps={card.steps}
+                key={item._id}
+                title={item.title}
+                requirements={item.requirements.split('\n').filter(s => s.trim())}
+                steps={item.procedure.split('\n').filter(s => s.trim())}
               />
             ))}
           </div>

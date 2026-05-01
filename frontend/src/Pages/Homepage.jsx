@@ -10,11 +10,15 @@ import innerArrow from '../assets/InnerArrow.svg'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Replace with API data when backend is ready
-const announcements = []
+import API from '../services/api'
 
 function Homepage() {
+  const [announcements, setAnnouncements] = useState([])
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+
+  useEffect(() => {
+    API.get('/announcements').then(res => setAnnouncements(res.data)).catch(() => {})
+  }, [])
 
   // Refs for animations
   const heroTitleRef = useRef(null)
@@ -168,20 +172,20 @@ function Homepage() {
           <p className="text-center text-gray-400 text-sm py-10">No announcements yet.</p>
         ) : announcements.map((item, index) => (
           <div
-            key={item.id}
+            key={item._id}
             ref={el => announcementRowsRef.current[index] = el}
             className={`flex flex-col md:flex-row items-center gap-10 mb-20 ${
               index % 2 !== 0 ? 'md:flex-row-reverse' : ''
             }`}
           >
-            <div className="anim-image w-full md:w-1/2 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-              <img src={item.image} alt={item.title} className="w-full h-64 object-cover" />
+            <div className="anim-image w-full md:w-1/2 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.15)] bg-blue-50 flex items-center justify-center h-64">
+              <span className="text-6xl">📢</span>
             </div>
             <div className="anim-text w-full md:w-1/2 flex flex-col gap-4">
-              <span className="text-xs font-semibold text-blue-600 uppercase tracking-widest">{item.category}</span>
+              <span className="text-xs font-semibold text-blue-600 uppercase tracking-widest">Announcement</span>
               <h3 className="text-2xl font-black text-gray-800 leading-tight">{item.title}</h3>
-              <p className="text-xs text-gray-400">{item.date}</p>
-              <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+              <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
+              <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">{item.content}</p>
               <div onClick={() => setSelectedAnnouncement(item)}>
                 <CTAButton label="READ MORE" />
               </div>

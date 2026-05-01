@@ -1,10 +1,8 @@
 import { useState } from 'react'
 
-function RequirementCard({ title, incomplete, requirements, steps }) {
+function RequirementCard({ title, requirements, steps }) {
   const [open, setOpen] = useState(false)
-  const [checked, setChecked] = useState(
-    steps.map((_, i) => i < steps.length - incomplete)
-  )
+  const [checked, setChecked] = useState(() => steps.map(() => false))
 
   const completedCount = checked.filter(Boolean).length
   const allDone = completedCount === steps.length

@@ -53,19 +53,19 @@ router.get('/:id', async (req, res) => {
 // Create new requirement (Admin only)
 router.post('/', protect, adminOnly, async (req, res) => {
     try {
-        const { title, description, procedure } = req.body;
+        const { title, requirements, procedure } = req.body;
         
         // Validate required fields
-        if (!title || !description || !procedure) {
+        if (!title || !requirements || !procedure) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Please provide title, description, and procedure' 
+                message: 'Please provide title, requirements, and procedure' 
             });
         }
         
         const requirement = await Requirement.create({
             title,
-            description,
+            requirements,
             procedure
         });
         
@@ -85,7 +85,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // Update requirement (Admin only)
 router.put('/:id', protect, adminOnly, async (req, res) => {
     try {
-        const { title, description, procedure } = req.body;
+        const { title, requirements, procedure } = req.body;
         
         const requirement = await Requirement.findById(req.params.id);
         
@@ -96,9 +96,8 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
             });
         }
         
-        // Update fields
         requirement.title = title || requirement.title;
-        requirement.description = description || requirement.description;
+        requirement.requirements = requirements || requirement.requirements;
         requirement.procedure = procedure || requirement.procedure;
         
         await requirement.save();

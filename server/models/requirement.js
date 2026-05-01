@@ -6,7 +6,7 @@ const requirementSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    description: {
+    requirements: {
         type: String,
         required: true
     },

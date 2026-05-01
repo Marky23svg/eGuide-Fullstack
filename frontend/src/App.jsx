@@ -14,10 +14,30 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/" replace />
 }
 
+// Admin only route
+function AdminRoute({ children }) {
+  const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (!token) return <Navigate to="/" replace />
+  if (user.role !== 'admin') return <Navigate to="/home" replace />
+  return children
+}
+
+// Student only route
+function StudentRoute({ children }) {
+  const token = localStorage.getItem('token')
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (!token) return <Navigate to="/" replace />
+  if (user.role === 'admin') return <Navigate to="/admin" replace />
+  return children
+}
+
 // Simple public route component (redirects if already logged in)
 function PublicRoute({ children }) {
   const token = localStorage.getItem('token')
-  return token ? <Navigate to="/home" replace /> : children
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (!token) return children
+  return user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/home" replace />
 }
 
 function App() {
@@ -35,31 +55,31 @@ function App() {
         
         {/* Protected routes - require login */}
         <Route path="/home" element={
-          <PrivateRoute>
+          <StudentRoute>
             <Homepage />
-          </PrivateRoute>
+          </StudentRoute>
         } />
         <Route path="/requirements" element={
-          <PrivateRoute>
+          <StudentRoute>
             <Requirements />
-          </PrivateRoute>
+          </StudentRoute>
         } />
         
-        {/* Admin routes - protected */}
+        {/* Admin routes - admin only */}
         <Route path="/admin" element={
-          <PrivateRoute>
+          <AdminRoute>
             <AdminDashboard />
-          </PrivateRoute>
+          </AdminRoute>
         } />
         <Route path="/admin/announcements" element={
-          <PrivateRoute>
+          <AdminRoute>
             <AdminAnnouncements />
-          </PrivateRoute>
+          </AdminRoute>
         } />
         <Route path="/admin/requirements" element={
-          <PrivateRoute>
+          <AdminRoute>
             <AdminRequirements />
-          </PrivateRoute>
+          </AdminRoute>
         } />
       </Routes>
     </BrowserRouter>
