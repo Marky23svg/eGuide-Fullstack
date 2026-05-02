@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import icctLogo from '../assets/Icctlogo.png'
+import icctLogo from '../assets/Icctlogo.webp'
 import facebookIcon from '../assets/facebookfooter.svg'
 import tiktokIcon from '../assets/tiktokfooter.svg'
 import youtubeIcon from '../assets/youtubefooter.svg'
@@ -50,13 +50,15 @@ const Footer = forwardRef((props, ref) => {
             {/* Social icons */}
             <div className="flex items-center gap-3">
               {[
-                { icon: facebookIcon, label: 'Facebook' },
-                { icon: tiktokIcon, label: 'TikTok' },
-                { icon: youtubeIcon, label: 'YouTube' },
-              ].map(({ icon, label }) => (
+                { icon: facebookIcon, label: 'Facebook', url: 'https://www.facebook.com/IM4ICCT' },
+                { icon: tiktokIcon, label: 'TikTok', url: 'https://www.tiktok.com/discover/icct' },
+                { icon: youtubeIcon, label: 'YouTube', url: 'https://www.youtube.com/@icctcolleges6903' },
+              ].map(({ icon, label, url }) => (
                 <a
                   key={label}
-                  href="#"
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-blue-600 hover:border-blue-600 transition"
                 >
                   <img src={icon} alt={label} className="w-4 h-4 brightness-0 invert" />

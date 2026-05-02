@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import loginBg from '../assets/Login_bg.png'
+import loginBg from '../assets/Login_bg.webp'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import API from '../services/api'
 
@@ -254,6 +254,7 @@ localStorage.setItem('user', JSON.stringify(response.user))
             >
               Log In
             </button>
+
           </form>
         )}
 
@@ -322,6 +323,14 @@ localStorage.setItem('user', JSON.stringify(response.user))
             >
               Sign Up
             </button>
+
+            <div className="border-t border-gray-200" />
+            <p className="text-xs text-center text-gray-400">
+              By signing up, you agree to our{' '}
+              <span onClick={() => navigate('/terms')} className="text-blue-500 cursor-pointer hover:underline">Terms of Service</span>{' '}
+              and{' '}
+              <span onClick={() => navigate('/privacy')} className="text-blue-500 cursor-pointer hover:underline">Privacy Policy</span>
+            </p>
           </form>
         )}
 

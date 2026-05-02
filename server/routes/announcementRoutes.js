@@ -36,7 +36,7 @@ router.get('/:id', async (req, res) => {
 // Create announcement (Admin only) - WITH EMAIL NOTIFICATION
 router.post('/', protect, adminOnly, async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, content, category, date, description, fullDetails, requirements, image, actionButton, emailNotification } = req.body;
         
         if (!title || !content) {
             return res.status(400).json({ 
@@ -45,7 +45,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
             });
         }
         
-        const announcement = await Announcement.create({ title, content });
+        const announcement = await Announcement.create({ title, content, category, date, description, fullDetails, requirements, image, actionButton, emailNotification });
         const students = await User.find({ role: 'student' }).select('email name');
         
         // Send emails in background - don't await so response is immediate
@@ -71,15 +71,23 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // Update announcement (Admin only)
 router.put('/:id', protect, adminOnly, async (req, res) => {
     try {
-        const { title, content } = req.body;
+        const { title, content, category, date, description, fullDetails, requirements, image, actionButton, emailNotification } = req.body;
         
         const announcement = await Announcement.findById(req.params.id);
         if (!announcement) {
             return res.status(404).json({ success: false, message: 'Announcement not found' });
         }
         
-        announcement.title = title || announcement.title;
-        announcement.content = content || announcement.content;
+        if (title) announcement.title = title;
+        if (content) announcement.content = content;
+        if (category !== undefined) announcement.category = category;
+        if (date !== undefined) announcement.date = date;
+        if (description !== undefined) announcement.description = description;
+        if (fullDetails !== undefined) announcement.fullDetails = fullDetails;
+        if (requirements !== undefined) announcement.requirements = requirements;
+        if (image !== undefined) announcement.image = image;
+        if (actionButton !== undefined) announcement.actionButton = actionButton;
+        if (emailNotification !== undefined) announcement.emailNotification = emailNotification;
         await announcement.save();
         
         res.json({

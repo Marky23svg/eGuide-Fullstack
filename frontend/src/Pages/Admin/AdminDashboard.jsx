@@ -30,7 +30,7 @@ function AdminDashboard() {
 
   const stats = [
     { label: 'Total Announcements', value: counts.announcements, icon: <FaBullhorn />, color: 'bg-blue-50 text-blue-600' },
-    { label: 'Total Requirements', value: counts.requirements, icon: <FaClipboardList />, color: 'bg-green-50 text-green-600' },
+    { label: 'Total Documents', value: counts.requirements, icon: <FaClipboardList />, color: 'bg-green-50 text-green-600' },
     { label: 'Total Students', value: counts.students, icon: <FaUsers />, color: 'bg-purple-50 text-purple-600' },
   ]
 
@@ -60,7 +60,7 @@ function AdminDashboard() {
             + New Announcement
           </button>
           <button onClick={() => navigate('/admin/requirements')} className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-700 transition">
-            + New Requirement
+            + New Document
           </button>
         </div>
       </div>

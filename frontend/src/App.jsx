@@ -3,10 +3,12 @@ import Login from './Pages/login'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
 import Homepage from './Pages/Homepage'
-import Requirements from './Pages/Requirements'
+import Documents from './Pages/Documents'
+import Announcements from './Pages/Announcements'
+import NotFound from './Pages/NotFound'
 import AdminDashboard from './Pages/Admin/AdminDashboard'
 import AdminAnnouncements from './Pages/Admin/AdminAnnouncements'
-import AdminRequirements from './Pages/Admin/AdminRequirements'
+import AdminDocuments from './Pages/Admin/AdminDocuments'
 
 // Simple protected route component
 function PrivateRoute({ children }) {
@@ -61,7 +63,12 @@ function App() {
         } />
         <Route path="/requirements" element={
           <StudentRoute>
-            <Requirements />
+            <Documents />
+          </StudentRoute>
+        } />
+        <Route path="/announcements" element={
+          <StudentRoute>
+            <Announcements />
           </StudentRoute>
         } />
         
@@ -78,9 +85,10 @@ function App() {
         } />
         <Route path="/admin/requirements" element={
           <AdminRoute>
-            <AdminRequirements />
+            <AdminDocuments />
           </AdminRoute>
         } />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

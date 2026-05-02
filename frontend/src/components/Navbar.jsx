@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import icctLogo from '../assets/Icctlogo.png'
+import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut, FiRepeat } from 'react-icons/fi'
 
@@ -294,11 +294,7 @@ function NavLinks({ textColor, navigate, onNavigate }) {
   const isHomepage = window.location.pathname === '/home'
 
   const handleAnnouncement = () => {
-    if (isHomepage) {
-      document.getElementById('announcements')?.scrollIntoView({ behavior: 'smooth' })
-    } else {
-      navigate('/home#announcements')
-    }
+    navigate('/announcements')
     onNavigate?.()
   }
 
@@ -309,6 +305,13 @@ function NavLinks({ textColor, navigate, onNavigate }) {
 
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-10">
+      <span
+        onClick={() => { navigate('/home'); onNavigate?.() }}
+        className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
+        style={{ letterSpacing: '0.2em' }}
+      >
+        Home
+      </span>
       <span
         onClick={handleAnnouncement}
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
@@ -321,7 +324,7 @@ function NavLinks({ textColor, navigate, onNavigate }) {
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
         style={{ letterSpacing: '0.2em' }}
       >
-        Requirements
+        Documents
       </span>
     </div>
   )

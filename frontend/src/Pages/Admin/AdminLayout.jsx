@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import icctLogo from '../../assets/Icctlogo.png'
+import icctLogo from '../../assets/Icctlogo.webp'
 import {
   MdDashboard, MdCampaign, MdChecklist,
   MdChevronLeft, MdChevronRight,
@@ -10,7 +10,7 @@ import {
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: MdDashboard,  path: '/admin' },
   { label: 'Announcements',  icon: MdCampaign,   path: '/admin/announcements' },
-  { label: 'Requirements',   icon: MdChecklist,  path: '/admin/requirements' },
+  { label: 'Documents',   icon: MdChecklist,  path: '/admin/requirements' },
 ]
 
 function AdminLayout({ children, activePage }) {
