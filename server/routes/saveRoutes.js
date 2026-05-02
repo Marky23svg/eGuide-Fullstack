@@ -1,5 +1,5 @@
 import express from 'express';
-import SavedRequirement from '../models/savedRequirement.js';
+import SavedRequirement from '../models/savedrequirement.js';
 import Requirement from '../models/requirement.js';
 import { protect } from '../middleware/auth.js';
 

@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Navbar from '../components/Navbar'
 import CTAButton from '../components/CTAButton'
 import Footer from '../components/Footer'
+import Chatbot from '../components/Chatbot'
 import homepageBg from '../assets/Homepage_bg.png'
 import outerArrow from '../assets/OuterArrow.svg'
 import innerArrow from '../assets/InnerArrow.svg'
@@ -260,6 +261,8 @@ function Homepage() {
           </div>
         </div>
       )}
+
+      <Chatbot />
 
     </div>
   )
