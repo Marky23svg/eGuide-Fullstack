@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import Login from './Pages/login'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
@@ -42,9 +43,16 @@ function PublicRoute({ children }) {
   return user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/home" replace />
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+  return null
+}
+
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         {/* Public routes - redirect to home if already logged in */}
         <Route path="/" element={

@@ -34,7 +34,7 @@ function Documents() {
       <Navbar />
 
       {/* Header */}
-      <div className="relative border-b border-gray-100 pt-24 pb-10 px-8 overflow-hidden">
+      <div data-nav="dark" className="relative border-b border-gray-100 pt-24 pb-10 px-8 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${requirementBg})` }} />
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-50 to-transparent" />
@@ -48,7 +48,7 @@ function Documents() {
       </div>
 
       {/* Search + Sort */}
-      <div className="max-w-6xl mx-auto px-8 pt-8 flex flex-col sm:flex-row gap-3">
+      <div data-nav="light" className="max-w-6xl mx-auto px-8 pt-8 flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
           <input

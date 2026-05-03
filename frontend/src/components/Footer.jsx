@@ -1,10 +1,20 @@
 import { forwardRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import icctLogo from '../assets/Icctlogo.webp'
 import facebookIcon from '../assets/facebookfooter.svg'
 import tiktokIcon from '../assets/tiktokfooter.svg'
 import youtubeIcon from '../assets/youtubefooter.svg'
 
 const Footer = forwardRef((props, ref) => {
+  const navigate = useNavigate()
+
+  const quickLinks = [
+    { label: 'Home', path: '/home' },
+    { label: 'Announcements', path: '/announcements' },
+    { label: 'Documents', path: '/requirements' },
+    { label: 'Terms of Service', path: '/terms' },
+    { label: 'Privacy Policy', path: '/privacy' },
+  ]
   return (
     <footer ref={ref} className="relative bg-gray-950 text-white overflow-hidden">
 
@@ -71,15 +81,15 @@ const Footer = forwardRef((props, ref) => {
           <div className="footer-col flex flex-col gap-5">
             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Quick Links</h4>
             <div className="flex flex-col gap-3">
-              {['Home', 'Announcements', 'Requirements', 'Terms of Service', 'Privacy Policy'].map(link => (
-                <a
-                  key={link}
-                  href="#"
-                  className="text-white/40 text-sm hover:text-white transition flex items-center gap-2 group"
+              {quickLinks.map(({ label, path }) => (
+                <span
+                  key={label}
+                  onClick={() => navigate(path)}
+                  className="text-white/40 text-sm hover:text-white transition flex items-center gap-2 group cursor-pointer"
                 >
                   <span className="w-0 group-hover:w-3 h-px bg-blue-400 transition-all duration-300" />
-                  {link}
-                </a>
+                  {label}
+                </span>
               ))}
             </div>
           </div>

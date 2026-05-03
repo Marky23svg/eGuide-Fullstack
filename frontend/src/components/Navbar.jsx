@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut, FiRepeat } from 'react-icons/fi'
@@ -14,9 +14,10 @@ const CARD_TRANSITION = [
 
 function Navbar() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [isFixed, setIsFixed] = useState(false)
   const [navVisible, setNavVisible] = useState(true)
-  const [isDark, setIsDark] = useState(true)
+  const [isDark, setIsDark] = useState(location.pathname === '/home')
   const [profileOpen, setProfileOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -35,12 +36,12 @@ function Navbar() {
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
   useEffect(() => {
-    const handleScroll = () => {
-      const past = window.scrollY > 64
-      scrolledRef.current = past
-      setIsFixed(past)
-      setNavVisible(!past)
-
+    const isHeroPage = location.pathname === '/home'
+    setIsFixed(false)
+    setNavVisible(true)
+    setIsDark(isHeroPage)
+    if (!isHeroPage) return
+    setTimeout(() => {
       let dark = true
       document.querySelectorAll('[data-nav="light"]').forEach((s) => {
         const r = s.getBoundingClientRect()
@@ -51,6 +52,45 @@ function Navbar() {
         if (r.top <= 80 && r.bottom >= 80) dark = true
       })
       setIsDark(dark)
+    }, 50)
+  }, [location.pathname])
+
+  useEffect(() => {
+    const checkDark = () => {
+      let dark = true
+      document.querySelectorAll('[data-nav="light"]').forEach((s) => {
+        const r = s.getBoundingClientRect()
+        if (r.top <= 80 && r.bottom >= 80) dark = false
+      })
+      document.querySelectorAll('[data-nav="dark"]').forEach((s) => {
+        const r = s.getBoundingClientRect()
+        if (r.top <= 80 && r.bottom >= 80) dark = true
+      })
+      setIsDark(dark)
+    }
+
+    const handleScroll = () => {
+      const past = window.scrollY > 64
+      scrolledRef.current = past
+      setIsFixed(past)
+      setNavVisible(!past)
+
+      if (window.location.pathname === '/home') {
+        let dark = true
+        document.querySelectorAll('[data-nav="light"]').forEach((s) => {
+          const r = s.getBoundingClientRect()
+          if (r.top <= 80 && r.bottom >= 80) dark = false
+        })
+        document.querySelectorAll('[data-nav="dark"]').forEach((s) => {
+          const r = s.getBoundingClientRect()
+          if (r.top <= 80 && r.bottom >= 80) dark = true
+        })
+        setIsDark(dark)
+      } else {
+        const header = document.querySelector('[data-nav="dark"]')
+        const headerBottom = header ? header.getBoundingClientRect().bottom : 200
+        setIsDark(headerBottom > 80)
+      }
     }
 
     const handleMouseMove = (e) => {
@@ -74,6 +114,7 @@ function Navbar() {
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mousedown', handleClickOutside)
+    setTimeout(checkDark, 50)
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('mousemove', handleMouseMove)
@@ -108,20 +149,20 @@ function Navbar() {
         <div className="absolute top-0 left-0 w-full z-50">
           <nav
             className="w-full px-4 sm:px-8 py-3 flex items-center justify-between"
-            style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)' }}
+            style={{ background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)' : 'transparent' }}
           >
-            <NavLogo textColor="text-white" subTextColor="text-white/60" />
+            <NavLogo textColor={textColor} subTextColor={subTextColor} />
             <div className="hidden md:flex items-center gap-10">
-              <NavLinks textColor="text-white" navigate={navigate} />
+              <NavLinks textColor={textColor} navigate={navigate} />
               <div className="w-10 h-10" />
             </div>
-            <button className="md:hidden text-white p-2" onClick={() => setMobileMenuOpen(o => !o)}>
+            <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
               {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
             </button>
           </nav>
           {mobileMenuOpen && (
             <div className="md:hidden bg-black/80 backdrop-blur-sm px-6 py-4 flex flex-col gap-4">
-              <NavLinks textColor="text-white" navigate={navigate} onNavigate={closeMobile} />
+              <NavLinks textColor={textColor} navigate={navigate} onNavigate={closeMobile} />
             </div>
           )}
         </div>
