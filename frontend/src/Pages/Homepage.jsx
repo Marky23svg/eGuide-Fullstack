@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar'
 import CTAButton from '../components/CTAButton'
 import Footer from '../components/Footer'
 import Chatbot from '../components/Chatbot'
-import homepageBg from '../assets/Homepage_bg.png'
+import homepageBg from '../assets/Homepage_bg.webp'
 import outerArrow from '../assets/OuterArrow.svg'
 import innerArrow from '../assets/InnerArrow.svg'
 
