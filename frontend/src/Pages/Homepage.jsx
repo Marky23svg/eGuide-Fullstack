@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Navbar from '../components/Navbar'
@@ -14,6 +15,7 @@ gsap.registerPlugin(ScrollTrigger)
 import API from '../services/api'
 
 function Homepage() {
+  const navigate = useNavigate()
   const [announcements, setAnnouncements] = useState([])
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
 
@@ -21,7 +23,6 @@ function Homepage() {
     API.get('/announcements').then(res => setAnnouncements(res.data)).catch(() => {})
   }, [])
 
-  // Refs for animations
   const heroTitleRef = useRef(null)
   const heroParagraphRef = useRef(null)
   const heroScrollRef = useRef(null)
@@ -30,10 +31,7 @@ function Homepage() {
   const footerRef = useRef(null)
 
   useEffect(() => {
-    // small delay to ensure DOM is ready
     const ctx = gsap.context(() => {
-
-    // ── HERO INTRO ANIMATION ──
     const tl = gsap.timeline()
     tl.fromTo(heroTitleRef.current,
       { opacity: 0, y: 60 },
@@ -47,75 +45,36 @@ function Homepage() {
       { opacity: 0, y: 20 },
       { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3'
     )
-
-    // ── ANNOUNCEMENT TITLE ──
     gsap.fromTo(announcementTitleRef.current,
       { opacity: 0, y: 50 },
-      {
-        opacity: 1, y: 0,
-        scrollTrigger: {
-          trigger: announcementTitleRef.current,
-          start: 'top 90%',
-          end: 'top 55%',
-          scrub: 1.5,
-        }
-      }
+      { opacity: 1, y: 0, scrollTrigger: { trigger: announcementTitleRef.current, start: 'top 90%', end: 'top 55%', scrub: 1.5 } }
     )
+    }) 
+    return () => ctx.revert()
+  }, [])
 
-    // ── ANNOUNCEMENT ROWS — alternate slide from left/right ──
-    announcementRowsRef.current.forEach((row, index) => {
-      if (!row) return
-      const image = row.querySelector('.anim-image')
-      const text = row.querySelector('.anim-text')
-      const isReversed = index % 2 !== 0
-
-      gsap.fromTo(image,
-        { opacity: 0, x: isReversed ? 120 : -120 },
-        {
-          opacity: 1, x: 0,
-          scrollTrigger: {
-            trigger: row,
-            start: 'top 90%',
-            end: 'top 45%',
-            scrub: 1.5,
-          }
-        }
-      )
-
-      gsap.fromTo(text,
-        { opacity: 0, x: isReversed ? -120 : 120 },
-        {
-          opacity: 1, x: 0,
-          scrollTrigger: {
-            trigger: row,
-            start: 'top 90%',
-            end: 'top 45%',
-            scrub: 1.5,
-          }
-        }
-      )
+  useEffect(() => {
+    if (announcements.length === 0) return
+    const ctx = gsap.context(() => {
+      announcementRowsRef.current.forEach((row, index) => {
+        if (!row) return
+        const image = row.querySelector('.anim-image')
+        const text = row.querySelector('.anim-text')
+        const isReversed = index % 2 !== 0
+        gsap.fromTo(image, { opacity: 0, x: isReversed ? 120 : -120 }, { opacity: 1, x: 0, scrollTrigger: { trigger: row, start: 'top 90%', end: 'top 45%', scrub: 1.5 } })
+        gsap.fromTo(text, { opacity: 0, x: isReversed ? -120 : 120 }, { opacity: 1, x: 0, scrollTrigger: { trigger: row, start: 'top 90%', end: 'top 45%', scrub: 1.5 } })
+      })
     })
+    return () => ctx.revert()
+  }, [announcements])
 
-    // ── FOOTER ANIMATION ──
-    const footerChildren = footerRef.current?.querySelectorAll('.footer-col')
-    if (footerChildren) {
-      gsap.fromTo(footerChildren,
-        { opacity: 0, y: 60 },
-        {
-          opacity: 1, y: 0,
-          stagger: 0.15,
-          scrollTrigger: {
-            trigger: footerRef.current,
-            start: 'top 90%',
-            end: 'top 50%',
-            scrub: 1.5,
-          }
-        }
-      )
-    }
-
-    }) // end gsap.context
-
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const footerChildren = footerRef.current?.querySelectorAll('.footer-col')
+      if (footerChildren) {
+        gsap.fromTo(footerChildren, { opacity: 0, y: 60 }, { opacity: 1, y: 0, stagger: 0.15, scrollTrigger: { trigger: footerRef.current, start: 'top 90%', end: 'top 50%', scrub: 1.5 } })
+      }
+    })
     return () => ctx.revert()
   }, [])
 
@@ -171,7 +130,7 @@ function Homepage() {
 
         {announcements.length === 0 ? (
           <p className="text-center text-gray-400 text-sm py-10">No announcements yet.</p>
-        ) : announcements.map((item, index) => (
+        ) : announcements.slice(0, 3).map((item, index) => (
           <div
             key={item._id}
             ref={el => announcementRowsRef.current[index] = el}
@@ -193,6 +152,17 @@ function Homepage() {
             </div>
           </div>
         ))}
+
+        {announcements.length > 3 && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => navigate('/announcements')}
+              className="px-8 py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition shadow-[0_4px_15px_rgba(37,99,235,0.4)]"
+            >
+              View All Announcements →
+            </button>
+          </div>
+        )}
       </section>
 
       <Footer ref={footerRef} />
@@ -207,13 +177,21 @@ function Homepage() {
             className="relative bg-white w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative h-48 shrink-0">
-              <img src={selectedAnnouncement.image} alt={selectedAnnouncement.title} className="w-full h-full object-cover" />
+            <div className="relative shrink-0">
+              {selectedAnnouncement.image ? (
+                <img src={selectedAnnouncement.image} alt={selectedAnnouncement.title} className="w-full h-48 object-cover" />
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                  <span className="text-5xl">📢</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-4 left-5 right-10">
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-300">{selectedAnnouncement.category}</span>
+                {selectedAnnouncement.category && (
+                  <span className="text-xs font-bold uppercase tracking-widest text-blue-300">{selectedAnnouncement.category}</span>
+                )}
                 <h3 className="text-xl font-black text-white leading-tight mt-1">{selectedAnnouncement.title}</h3>
-                <p className="text-white/50 text-xs mt-1">{selectedAnnouncement.date}</p>
+                <p className="text-white/50 text-xs mt-1">{selectedAnnouncement.date || new Date(selectedAnnouncement.date_posted).toLocaleDateString()}</p>
               </div>
               <button
                 onClick={() => setSelectedAnnouncement(null)}
@@ -222,12 +200,19 @@ function Homepage() {
                 ✕
               </button>
             </div>
-
             <div className="overflow-y-auto flex flex-col gap-5 p-6">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-2">About</p>
-                <p className="text-gray-600 text-sm leading-relaxed">{selectedAnnouncement.fullDetails}</p>
-              </div>
+              {selectedAnnouncement.description && (
+                <p className="text-gray-600 text-sm leading-relaxed">{selectedAnnouncement.description}</p>
+              )}
+              {selectedAnnouncement.fullDetails && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-2">Full Details</p>
+                  <p className="text-gray-600 text-sm leading-relaxed">{selectedAnnouncement.fullDetails}</p>
+                </div>
+              )}
+              {!selectedAnnouncement.description && !selectedAnnouncement.fullDetails && (
+                <p className="text-gray-600 text-sm leading-relaxed">{selectedAnnouncement.content}</p>
+              )}
               {selectedAnnouncement.requirements?.length > 0 && (
                 <>
                   <div className="border-t border-gray-100" />
@@ -244,7 +229,7 @@ function Homepage() {
                   </div>
                 </>
               )}
-              {selectedAnnouncement.actionButton && (
+              {selectedAnnouncement.actionButton?.label && (
                 <>
                   <div className="border-t border-gray-100" />
                   <a
