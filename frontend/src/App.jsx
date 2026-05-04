@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
 import Login from './Pages/login'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
@@ -10,6 +10,51 @@ import NotFound from './Pages/NotFound'
 import AdminDashboard from './Pages/Admin/AdminDashboard'
 import AdminAnnouncements from './Pages/Admin/AdminAnnouncements'
 import AdminDocuments from './Pages/Admin/AdminDocuments'
+
+// Session timeout in milliseconds (30 minutes)
+const SESSION_TIMEOUT = 30 * 60 * 1000
+
+// Session timeout hook
+function useSessionTimeout() {
+  const navigate = useNavigate()
+  const [lastActivity, setLastActivity] = useState(Date.now())
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    navigate('/', { replace: true })
+    alert('Your session has expired due to inactivity. Please log in again.')
+  }, [navigate])
+
+  const resetTimer = useCallback(() => {
+    setLastActivity(Date.now())
+  }, [])
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
+    events.forEach(event => window.addEventListener(event, resetTimer))
+
+    const interval = setInterval(() => {
+      const now = Date.now()
+      if (now - lastActivity > SESSION_TIMEOUT) {
+        logout()
+      }
+    }, 60000) // Check every minute
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, resetTimer))
+      clearInterval(interval)
+    }
+  }, [lastActivity, logout, resetTimer])
+}
+
+function SessionManager({ children }) {
+  useSessionTimeout()
+  return children
+}
 
 // Simple protected route component
 function PrivateRoute({ children }) {
@@ -52,8 +97,9 @@ function ScrollToTop() {
 function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
+      <SessionManager>
+        <ScrollToTop />
+        <Routes>
         {/* Public routes - redirect to home if already logged in */}
         <Route path="/" element={
           <PublicRoute>
@@ -98,6 +144,7 @@ function App() {
         } />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </SessionManager>
     </BrowserRouter>
   )
 }

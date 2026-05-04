@@ -87,6 +87,52 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
+        const otp = generateResetCode();
+        user.loginOtp = otp;
+        user.loginOtpExpires = new Date(Date.now() + 5 * 60 * 1000);
+        await user.save();
+
+        const { sendBulkEmail } = await import('../config/email.js');
+        await sendBulkEmail([{ email }], 'Login OTP - eGuide System', `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                <div style="background-color: #2563eb; padding: 10px; text-align: center; border-radius: 5px 5px 0 0;">
+                    <h2 style="color: white; margin: 0;">eGuide System</h2>
+                </div>
+                <div style="padding: 20px;">
+                    <h3 style="color: #333;">Login Verification Code</h3>
+                    <p style="color: #666;">Use this code to complete your login. It expires in <strong>5 minutes</strong>.</p>
+                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
+                        <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otp}</span>
+                    </div>
+                </div>
+            </div>
+        `);
+
+        res.json({ success: true, message: 'OTP sent to your email', requiresOtp: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Verify login OTP
+router.post('/verify-login-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        const user = await User.findOne({ 
+            email, 
+            loginOtp: otp,
+            loginOtpExpires: { $gt: new Date() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+        }
+
+        user.loginOtp = null;
+        user.loginOtpExpires = null;
+        await user.save();
+
         const token = jwt.sign(
             { id: user._id, role: user.role },
             process.env.JWT_SECRET,

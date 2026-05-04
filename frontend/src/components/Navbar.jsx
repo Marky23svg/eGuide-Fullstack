@@ -25,6 +25,7 @@ function Navbar() {
   const scrolledRef = useRef(false)
   const profileRef = useRef(null)
   const profileOpenRef = useRef(false)
+  const mobileMenuRef = useRef(null)
 
   // Logout function - THIS IS THE FIX
   const handleLogout = () => {
@@ -33,7 +34,36 @@ function Navbar() {
     navigate('/')
   }
 
+  const closeMobile = useCallback(() => setMobileMenuOpen(false), [])
+
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setMobileMenuOpen(false)
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false)
+      }
+    }
+
+    const handleScroll = () => {
+      if (mobileMenuOpen) {
+        setMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    window.addEventListener('scroll', handleScroll)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [mobileMenuOpen])
 
   useEffect(() => {
     const isHeroPage = location.pathname === '/home'
@@ -113,12 +143,10 @@ function Navbar() {
 
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mousedown', handleClickOutside)
     setTimeout(checkDark, 50)
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
 
@@ -140,8 +168,6 @@ function Navbar() {
     transition: CARD_TRANSITION,
   }
 
-  const closeMobile = useCallback(() => setMobileMenuOpen(false), [])
-
   return (
     <>
       {/* Absolute navbar — visible before scroll */}
@@ -149,7 +175,10 @@ function Navbar() {
         <div className="absolute top-0 left-0 w-full z-50">
           <nav
             className="w-full px-4 sm:px-8 py-3 flex items-center justify-between"
-            style={{ background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.5), transparent)' : 'transparent' }}
+            style={{ 
+              background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.3))' : 'rgba(255,255,255,0.95)', 
+              backdropFilter: 'blur(10px)' 
+            }}
           >
             <NavLogo textColor={textColor} subTextColor={subTextColor} />
             <div className="hidden md:flex items-center gap-10">
@@ -157,12 +186,40 @@ function Navbar() {
               <div className="w-10 h-10" />
             </div>
             <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
-              {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+              <MdMenu size={24} />
             </button>
           </nav>
           {mobileMenuOpen && (
-            <div className="md:hidden bg-black/80 backdrop-blur-sm px-6 py-4 flex flex-col gap-4">
-              <NavLinks textColor={textColor} navigate={navigate} onNavigate={closeMobile} />
+            <div ref={mobileMenuRef} className="md:hidden bg-black/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 animate-slideDown">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                    {(JSON.parse(localStorage.getItem('user') || '{}').name || 'U').charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-semibold">{JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}</p>
+                    <p className="text-white/60 text-xs">{JSON.parse(localStorage.getItem('user') || '{}').email || 'guest@icct.edu.ph'}</p>
+                  </div>
+                </div>
+                <button className="text-white p-2" onClick={closeMobile}>
+                  <MdClose size={24} />
+                </button>
+              </div>
+              <NavLinks textColor="text-white" navigate={navigate} onNavigate={closeMobile} />
+              <div className="border-t border-white/20 pt-3 flex flex-col gap-2">
+                <button
+                  onClick={() => { handleLogout(); closeMobile(); }}
+                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2"
+                >
+                  <FiRepeat size={16} /> Switch Account
+                </button>
+                <button
+                  onClick={() => { handleLogout(); closeMobile(); }}
+                  className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
+                >
+                  <FiLogOut size={16} /> Log Out
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -172,9 +229,10 @@ function Navbar() {
       {isFixed && (
         <div className="fixed top-0 left-0 w-full z-50">
           <nav
-            className={`w-full px-4 sm:px-8 py-3 flex items-center justify-between ${navVisible ? '' : 'pointer-events-none'}`}
+            className={`w-full px-4 sm:px-8 py-3 flex items-center justify-between shadow-md ${navVisible ? '' : 'pointer-events-none'}`}
             style={{
-              background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.2), transparent)' : 'transparent',
+              background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.98)',
+              backdropFilter: 'blur(10px)',
               transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
               opacity: navVisible ? 1 : 0,
               transition: navVisible
@@ -188,12 +246,40 @@ function Navbar() {
               <div className="w-10 h-10" />
             </div>
             <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
-              {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+              <MdMenu size={24} />
             </button>
           </nav>
           {mobileMenuOpen && (
-            <div className="md:hidden bg-white/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 border-b border-gray-100">
+            <div ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 border-b border-gray-100 animate-slideDown">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                    {(JSON.parse(localStorage.getItem('user') || '{}').name || 'U').charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-gray-800 text-sm font-semibold">{JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}</p>
+                    <p className="text-gray-500 text-xs">{JSON.parse(localStorage.getItem('user') || '{}').email || 'guest@icct.edu.ph'}</p>
+                  </div>
+                </div>
+                <button className="text-gray-800 p-2" onClick={closeMobile}>
+                  <MdClose size={24} />
+                </button>
+              </div>
               <NavLinks textColor="text-gray-800" navigate={navigate} onNavigate={closeMobile} />
+              <div className="border-t border-gray-200 pt-3 flex flex-col gap-2">
+                <button
+                  onClick={() => { handleLogout(); closeMobile(); }}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm py-2"
+                >
+                  <FiRepeat size={16} /> Switch Account
+                </button>
+                <button
+                  onClick={() => { handleLogout(); closeMobile(); }}
+                  className="flex items-center gap-2 text-red-500 hover:text-red-600 text-sm py-2"
+                >
+                  <FiLogOut size={16} /> Log Out
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -205,6 +291,7 @@ function Navbar() {
           <div
             onClick={() => !profileOpen && setProfileOpen(true)}
             style={{ position: 'absolute', ...cardStyle }}
+            className="hidden md:block"
           >
             <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
           </div>
@@ -219,6 +306,7 @@ function Navbar() {
               pointerEvents: navVisible ? 'auto' : 'none',
               transition: `${CARD_TRANSITION}, ${navVisible ? 'transform 300ms ease' : 'transform 900ms ease'}`,
             }}
+            className="hidden md:block"
           >
             <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
           </div>

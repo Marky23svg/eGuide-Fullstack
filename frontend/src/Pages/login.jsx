@@ -9,6 +9,7 @@ function Login() {
 
   const [activeTab, setActiveTab] = useState('login')
   const [forgotStep, setForgotStep] = useState('email')
+  const [loginStep, setLoginStep] = useState('credentials')
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false)
@@ -20,6 +21,7 @@ function Login() {
   // Login form states
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loginOtp, setLoginOtp] = useState('')
 
   // Sign up form states
   const [regName, setRegName] = useState('')
@@ -36,6 +38,7 @@ function Login() {
 
   // Feedback messages
   const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
   const [signupError, setSignupError] = useState('')
   const [signupSuccess, setSignupSuccess] = useState('')
   const [forgotError, setForgotError] = useState('')
@@ -46,22 +49,32 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginError('')
-    console.log('1. Login button clicked')
-    console.log('2. Email:', email)
-    console.log('3. Password:', password)
+    setLoginLoading(true)
 
     try {
-      console.log('4. Calling API...')
       const response = await API.post('/auth/login', { email, password })
-      console.log('5. Response received:', response)
+
+      if (response.success && response.requiresOtp) {
+        setLoginStep('otp')
+      }
+    } catch (error) {
+      setLoginError(error.response?.data?.message || error.message)
+    } finally {
+      setLoginLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault()
+    setLoginError('')
+    setLoginLoading(true)
+
+    try {
+      const response = await API.post('/auth/verify-login-otp', { email, otp: loginOtp })
 
       if (response.success) {
-        console.log('6. Login successful!')
-        // Store token in sessionStorage (cleared when tab closes)
-        // For stronger security, request your backend to set an httpOnly cookie instead
         localStorage.setItem('token', response.token)
-localStorage.setItem('user', JSON.stringify(response.user))
-        console.log('7. Redirecting...')
+        localStorage.setItem('user', JSON.stringify(response.user))
         if (response.user.role === 'admin') {
           navigate('/admin')
         } else {
@@ -69,8 +82,9 @@ localStorage.setItem('user', JSON.stringify(response.user))
         }
       }
     } catch (error) {
-      console.error('ERROR:', error)
-      setLoginError('Login failed: ' + (error.response?.data?.message || error.message))
+      setLoginError(error.response?.data?.message || error.message)
+    } finally {
+      setLoginLoading(false)
     }
   }
 
@@ -174,7 +188,7 @@ localStorage.setItem('user', JSON.stringify(response.user))
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden">
+    <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden px-4">
 
       {/* Blurred background image */}
       <div
@@ -183,7 +197,7 @@ localStorage.setItem('user', JSON.stringify(response.user))
       />
 
       {/* Card */}
-      <div className="relative z-10 bg-white p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full max-w-sm">
+      <div className="relative z-10 bg-white p-6 sm:p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full max-w-sm mx-4">
 
         {/* Page title */}
         <h2 className="text-2xl font-bold text-center">eGuide <span className="text-blue-600">ICCT</span></h2>
@@ -217,45 +231,85 @@ localStorage.setItem('user', JSON.stringify(response.user))
 
         {/* Log In form */}
         {activeTab === 'login' && (
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            {loginError && <p className="text-xs text-red-500 text-center">{loginError}</p>}
-            {signupSuccess && <p className="text-xs text-green-500 text-center">{signupSuccess}</p>}
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Password</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
-                  required
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+          <>
+            {loginStep === 'credentials' && (
+              <form onSubmit={handleLogin} className="flex flex-col gap-4">
+                {loginError && <p className="text-xs text-red-500 text-center">{loginError}</p>}
+                {signupSuccess && <p className="text-xs text-green-500 text-center">{signupSuccess}</p>}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                      required
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                      {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                    </button>
+                  </div>
+                  <p onClick={() => setActiveTab('forgot')} className="text-xs text-blue-500 text-right mt-1 cursor-pointer hover:underline">Forgot Password?</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50"
+                >
+                  {loginLoading ? 'Sending OTP...' : 'Continue'}
                 </button>
-              </div>
-              <p onClick={() => setActiveTab('forgot')} className="text-xs text-blue-500 text-right mt-1 cursor-pointer hover:underline">Forgot Password?</p>
-            </div>
-            <button
-              type="submit"
-              className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
-            >
-              Log In
-            </button>
+              </form>
+            )}
 
-          </form>
+            {loginStep === 'otp' && (
+              <>
+                <div className="text-center mb-2">
+                  <p className="font-semibold text-gray-700">Verify OTP</p>
+                  <p className="text-xs text-gray-400">We sent a code to <span className="text-blue-500">{email}</span></p>
+                </div>
+                {loginError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{loginError}</p>}
+                <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">OTP Code</label>
+                    <input
+                      type="text"
+                      value={loginOtp}
+                      onChange={(e) => setLoginOtp(e.target.value)}
+                      placeholder="Enter 6-digit code"
+                      className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loginLoading}
+                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50"
+                  >
+                    {loginLoading ? 'Verifying...' : 'Verify & Login'}
+                  </button>
+                </form>
+                <p
+                  onClick={() => { setLoginStep('credentials'); setLoginOtp('') }}
+                  className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
+                >
+                  ← Back to Login
+                </p>
+              </>
+            )}
+          </>
         )}
 
         {/* Sign Up form */}
