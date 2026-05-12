@@ -229,7 +229,7 @@ function Navbar() {
 }
 
 function CardContent({ profileOpen, onLogout }) {
-  // Get user data from localStorage
+  const [showSwitch, setShowSwitch] = useState(false)
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
@@ -237,6 +237,53 @@ function CardContent({ profileOpen, onLogout }) {
 
   return (
     <>
+      {/* Switch Account Modal */}
+      {showSwitch && (
+        <div
+          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowSwitch(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-5">
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-1">Current Account</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-black text-lg">
+                  {userInitial}
+                </div>
+                <div>
+                  <p className="text-white font-bold text-sm">{userName}</p>
+                  <p className="text-blue-200 text-xs">{userEmail}</p>
+                </div>
+              </div>
+            </div>
+            {/* Actions */}
+            <div className="p-4 flex flex-col gap-2">
+              <p className="text-xs text-gray-400 font-medium px-1 mb-1">Switch to another account</p>
+              <button
+                onClick={() => { setShowSwitch(false); onLogout() }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-600 transition text-sm font-semibold text-gray-700"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-black">+</div>
+                Log in with a different account
+              </button>
+              <div className="border-t border-gray-100 my-1" />
+              <button
+                onClick={() => { setShowSwitch(false); onLogout() }}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-red-50 transition text-sm font-semibold text-red-400"
+              >
+                <div className="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center">
+                  <FiLogOut size={14} />
+                </div>
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Avatar icon */}
       <div
         style={{
@@ -293,7 +340,7 @@ function CardContent({ profileOpen, onLogout }) {
         }}
       >
         <button
-          onClick={onLogout}
+          onClick={() => setShowSwitch(true)}
           className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-gray-500 hover:bg-gray-50 transition"
         >
           <FiRepeat size={11} /> Switch Account

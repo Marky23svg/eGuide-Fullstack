@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import loginBg from '../assets/Login_bg.webp'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import API from '../services/api'
+import { motion } from "motion/react";
 
 function Login() {
   const navigate = useNavigate()
@@ -173,17 +174,69 @@ localStorage.setItem('user', JSON.stringify(response.user))
     }
   }
 
-  return (
-    <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden">
+return (
+  <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden">
 
-      {/* Blurred background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${loginBg})`, filter: 'blur(6px)', transform: 'scale(1.1)' }}
+    {/* Blurred background image */}
+    <div
+      className="absolute inset-0 bg-cover bg-center"
+      style={{ backgroundImage: `url(${loginBg})`, filter: 'blur(6px)', transform: 'scale(1.1)' }}
+    />
+
+    {/* WRAPPER: card + robot together */}
+    <div className="relative z-10" style={{ width: '384px' }}>
+
+      {/* ── ROBOT BODY ── */}
+      <motion.img
+        src="/robot-body.png"
+        alt="Robot"
+        className="absolute"
+        key={activeTab + '-body'}
+        style={{
+          width: '160px',
+          top: '-30px',
+          zIndex: 5,
+          // Login = left side, Signup = right side
+          ...(activeTab === 'signup'
+            ? { left: '100%', marginLeft: '-50px'}
+            : { right: '100%', marginRight: '-50px', scaleX: -1, transform: 'scaleX(-1)'}
+          ),
+        }}
+        initial={{
+          x: activeTab === 'signup' ? -100 : 100,
+          opacity: 0.3,
+        }}
+        animate={{
+          x: 0,
+          opacity: 1,
+          y: [0, -6, 0],
+        }}
+        transition={{
+          x: { type: 'spring', stiffness: 200, damping: 18 },
+          opacity: { duration: 0.15 },
+          y: { duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.6 },
+        }}
+      />
+
+      {/* ── ROBOT ARM ── */}
+      <motion.img
+        src="/robot-arm.png"
+        alt="Robot Arm"
+        className="absolute"
+        key={activeTab + '-arm'}
+        style={{
+          width: '80px',
+          top: '60px',
+          zIndex: 20,
+          ...(activeTab === 'signup'
+            ? { left: '100%', marginLeft: '-30px'}
+            : { right: '100%', marginRight: '-30px', scaleX: -1, transform: 'scaleX(-1)'}
+          ),
+        }}
       />
 
       {/* Card */}
-      <div className="relative z-10 bg-white p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full max-w-sm">
+      <div className="relative bg-white p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full" style={{ zIndex: 10 }}>
 
         {/* Page title */}
         <h2 className="text-2xl font-bold text-center">eGuide <span className="text-blue-600">ICCT</span></h2>
@@ -215,11 +268,11 @@ localStorage.setItem('user', JSON.stringify(response.user))
           </div>
         )}
 
-        {/* Log In form */}
+        {/* Login form */}
         {activeTab === 'login' && (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            {loginError && <p className="text-xs text-red-500 text-center">{loginError}</p>}
-            {signupSuccess && <p className="text-xs text-green-500 text-center">{signupSuccess}</p>}
+            {loginError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{loginError}</p>}
+            {signupSuccess && <p className="text-xs text-green-500 text-center bg-green-50 border border-green-200 rounded p-2">{signupSuccess}</p>}
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
@@ -246,22 +299,26 @@ localStorage.setItem('user', JSON.stringify(response.user))
                   {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
-              <p onClick={() => setActiveTab('forgot')} className="text-xs text-blue-500 text-right mt-1 cursor-pointer hover:underline">Forgot Password?</p>
             </div>
+            <p
+              onClick={() => setActiveTab('forgot')}
+              className="text-xs text-right text-blue-500 cursor-pointer hover:underline -mt-2"
+            >
+              Forgot Password?
+            </p>
             <button
               type="submit"
               className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
             >
               Log In
             </button>
-
           </form>
         )}
 
         {/* Sign Up form */}
         {activeTab === 'signup' && (
           <form onSubmit={handleSignUp} className="flex flex-col gap-4">
-            {signupError && <p className="text-xs text-red-500 text-center">{signupError}</p>}
+            {signupError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{signupError}</p>}
             <div>
               <label className="block text-sm font-medium mb-1">Full Name</label>
               <input
@@ -273,7 +330,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
@@ -323,7 +379,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
             >
               Sign Up
             </button>
-
             <div className="border-t border-gray-200" />
             <p className="text-xs text-center text-gray-400">
               By signing up, you agree to our{' '}
@@ -337,8 +392,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
         {/* Forgot Password flow */}
         {activeTab === 'forgot' && (
           <div className="flex flex-col gap-4">
-
-            {/* Step 1 — Enter email to receive code */}
             {forgotStep === 'email' && (
               <>
                 <div className="text-center mb-2">
@@ -369,8 +422,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
                 </form>
               </>
             )}
-
-            {/* Step 2 — Enter the code sent to email */}
             {forgotStep === 'code' && (
               <>
                 <div className="text-center mb-2">
@@ -400,8 +451,6 @@ localStorage.setItem('user', JSON.stringify(response.user))
                 </form>
               </>
             )}
-
-            {/* Step 3 — Enter new password */}
             {forgotStep === 'reset' && (
               <>
                 <div className="text-center mb-2">
@@ -451,21 +500,20 @@ localStorage.setItem('user', JSON.stringify(response.user))
                 </form>
               </>
             )}
-
-            {/* Back to Login link */}
             <p
               onClick={() => { setActiveTab('login'); setForgotStep('email') }}
               className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
             >
               ← Back to Log In
             </p>
-
           </div>
         )}
 
-      </div>
-    </div>
-  )
+      </div>{/* end card */}
+    </div>{/* end wrapper */}
+
+  </div>
+)
 }
 
 export default Login
