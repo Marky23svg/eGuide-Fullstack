@@ -3,149 +3,80 @@ import { LuMessageCircle } from 'react-icons/lu';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { CgClose } from 'react-icons/cg';
 import { FaCircle } from 'react-icons/fa';
-
-const docs = [
-  {
-    id: 'sog',
-    title: 'Summary of Grades (SOG)',
-    requirements: ['Print receipt proof of payment (₱100)'],
-    procedure: [
-      'Email your appointment request to mganda@icct.edu.ph (include: full name, student number, course, year level, purpose).',
-      'Wait for an email reply with your appointment.',
-      'On the scheduled date, proceed to window 6-7.',
-      'Bring payment receipt and line up at window 6-7.'
-    ]
-  },
-  {
-    id: 'tor',
-    title: 'Transcript of Records (TOR)',
-    requirements: [
-      'Filled REQUEST Google Form (link provided via confirmation email)',
-      'Payment of document fee at authorized payment centers',
-      'Payment reference: student name and student ID with "RO" suffix (e.g., 201812345RO)',
-      'Proof of payment attached to Google Form or emailed',
-      'Original documents when claiming or for CAV'
-    ],
-    procedure: [
-      'Fill out the REQUEST Google Form (link will be provided via email).',
-      'Registrar will send a confirmation email with instructions and fees.',
-      'Settle document fees using specified payment method and format the account number correctly.',
-      'Submit proof of payment via the Google Form or email.',
-      'Processing period: within 30–45 days from date of payment.',
-      'To claim (or for CAV) go to Registrar Window 7 at Cainta Main Campus (Mon–Sat, 8am–4pm) and bring originals.'
-    ]
-  },
-  {
-    id: 'ojt',
-    title: 'On-The-Job Training (OJT / SIP)',
-    requirements: [
-      'Complete SIP Pre-Registration Form (college-specific Google Form)',
-      'Parent/guardian signature and photocopy of valid ID where required',
-      'Latest prospectus / summary of grades or proof of payment',
-      'SIP processing fee (₱650)',
-      'No outstanding balance (if applicable)'
-    ],
-    procedure: [
-      'Complete SIP Pre-Registration form via the provided Google Form.',
-      'CDJP will email schedule for evaluation (2–3 working days after registration).',
-      'Attend scheduled evaluation and present prospectus and latest SOG or proof of payment.',
-      'Submit photocopy of evaluated prospectus to Dean/Academic Head for pre-approval.',
-      'Once pre-approved, attend orientation scheduled by CDJP.',
-      'Settle SIP processing fee at authorized payment centers (add code "SIP" to student number when paying).',
-      'Portal Group will encode SIP subjects during enrollment period; then get TCS and pay enrollment fees.'
-    ]
-  },
-  {
-    id: 'form-137',
-    title: 'Form 137 (Permanent Record)',
-    requirements: [
-      'Filled REQUEST Google Form (link provided via confirmation email)',
-      'Payment at authorized payment centers',
-      'Payment reference: student name and student ID with "RO" suffix',
-      'Proof of payment attached to Google Form or emailed',
-      'Original documents when claiming or for CAV'
-    ],
-    procedure: [
-      'Fill out the REQUEST Google Form.',
-      'Registrar sends confirmation email with instructions and fees.',
-      'Settle document fees and submit proof of payment.',
-      'Processing: within 30–45 days from date of payment.',
-      'To claim or for CAV, go to Registrar Window 7 (Mon–Sat, 8am–4pm) with originals.'
-    ]
-  },
-  {
-    id: 'enrollment',
-    title: 'Enrollment',
-    requirements: [
-      'Proof of payment for application fee (college freshmen: ₱220)',
-      'SHS report card / JHS report card (originals as applicable)',
-      'SHS Permanent Record (Form 137A/SF10) or ORF where applicable',
-      'Certificate of Good Moral Character (original)',
-      'Photocopies of PSA Birth Certificate',
-      'Passport-sized photos (4 pcs, 2x2, white background)'
-    ],
-    procedure: [
-      'Apply online via ICCT Online Application Portal and receive Application Number.',
-      'Pay the application fee using your Application Number.',
-      'Submit requirements to Admissions Office (Mon–Sat, 7:00 AM–7:00 PM).',
-      'Receive Tentative Class Schedule (TCS) and pay downpayment or full payment as instructed.',
-      'Activate your Student Portal and update password/security questions.',
-      'Generate and download your Official Registration Form (ORF).',
-      'Attend New Student Orientation.',
-      'Get your Student ID from the Library/Admissions Office.'
-    ]
-  }
-];
-
-const DOC_KEYWORDS = {
-  sog: ['summary of grades', 'sog', 'grades copy', 'grade slip'],
-  tor: ['transcript', 'tor', 'records'],
-  ojt: ['ojt', 'sip', 'on-the-job', 'internship', 'training'],
-  'form-137': ['form 137', '137', 'permanent record'],
-  enrollment: ['enrollment', 'enroll', 'enrolment', 'how to enroll', 'enrolling']
-};
-
-const detectDocFromInput = (text) => {
-  const lower = text.toLowerCase();
-  for (const [id, keywords] of Object.entries(DOC_KEYWORDS)) {
-    if (keywords.some((keyword) => lower.includes(keyword))) {
-      return docs.find((doc) => doc.id === id);
-    }
-  }
-  return null;
-};
+import { requirements as requirementsApi, announcements as announcementsApi } from '../services/api';
 
 const formatDocSummary = (doc) => {
-  const requirements = doc.requirements.map((req) => `- ${req}`).join('\n');
-  const procedure = doc.procedure.map((step, index) => `${index + 1}. ${step}`).join('\n');
-
-  return `Here is the ${doc.title} information:\n\nRequirements:\n${requirements}\n\nProcedure:\n${procedure}`;
+  const reqs = Array.isArray(doc.requirements)
+    ? doc.requirements.map((r) => `- ${r}`).join('\n')
+    : doc.requirements;
+  const steps = Array.isArray(doc.procedure)
+    ? doc.procedure.map((s, i) => `${i + 1}. ${s}`).join('\n')
+    : doc.procedure;
+  return `Here is the ${doc.title} information:\n\nRequirements:\n${reqs}\n\nProcedure:\n${steps}`;
 };
 
-const getBotResponse = (text) => {
+// Stop words that shouldn't count as meaningful matches
+const STOP_WORDS = new Set(['of', 'the', 'a', 'an', 'to', 'for', 'and', 'or', 'in', 'on', 'at', 'how', 'get', 'i', 'my', 'is', 'what']);
+
+const detectDoc = (text, docs) => {
+  const inputWords = text.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+  if (inputWords.length === 0) return null;
+
+  let bestMatch = null;
+  let bestScore = 0;
+
+  for (const doc of docs) {
+    const titleWords = doc.title.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+    // Count how many meaningful title words appear in the input
+    const matches = titleWords.filter((word) => inputWords.some((iw) => iw.includes(word) || word.includes(iw)));
+    const score = matches.length / titleWords.length;
+    // Require at least 50% of meaningful title words to match
+    if (score > bestScore && score >= 0.5) {
+      bestScore = score;
+      bestMatch = doc;
+    }
+  }
+
+  return bestMatch;
+};
+
+const getBotResponse = (text, docs, announcements) => {
   const lower = text.toLowerCase();
-  const doc = detectDocFromInput(text);
-  if (doc) {
-    return formatDocSummary(doc);
+
+  // Greetings
+  if (/\b(hi|hello|hey)\b/.test(lower)) {
+    return 'Hi there! Ask me about enrollment, documents, requirements, or the latest announcements.';
   }
 
-  if (lower.includes('requirements')) {
-    return 'Go to the Requirements page to browse academic requirements by document or process. Select a card to see the full requirements and procedure.';
+  // Announcements intent
+  if (lower.includes('announcement') || lower.includes('news') || lower.includes('update') || lower.includes('notice')) {
+    if (announcements.length === 0) {
+      return 'There are no announcements at the moment. Check back later.';
+    }
+    const latest = announcements.slice(0, 3);
+    const list = latest.map((a, i) => `${i + 1}. ${a.title}`).join('\n');
+    return `Here are the latest announcements:\n\n${list}\n\nVisit the Announcements page for full details.`;
   }
 
-  if (lower.includes('announcement') || lower.includes('announcements')) {
-    return 'Check the home page announcements section for the latest updates and important school notices.';
+  // Requirements list intent
+  if (lower.includes('what documents') || lower.includes('list of requirements') || lower.includes('available requirements')) {
+    if (docs.length === 0) return 'No requirements are available right now.';
+    const list = docs.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
+    return `Here are the available documents/requirements:\n\n${list}\n\nAsk me about any specific one for details.`;
   }
 
+  // Specific document match
+  const doc = detectDoc(text, docs);
+  if (doc) return formatDocSummary(doc);
+
+  // Login / portal
   if (lower.includes('login') || lower.includes('portal') || lower.includes('access')) {
-    return 'Use your student login credentials to access the portal. If you need help, go to the login page and follow the instructions for password reset or contact support.';
+    return 'Use your student credentials to log in. If you forgot your password, use the "Forgot Password" option on the login page.';
   }
 
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
-    return 'Hi there! Ask me about enrollment, documents, requirements, or how to use the eGuide platform.';
-  }
-
-  return 'I can help with enrollment, summary of grades, TOR, OJT, Form 137, and other requirement procedures. Ask me about a specific document or process.';
+  // Fallback
+  const docNames = docs.map((d) => d.title).join(', ');
+  return `I can help with requirements and announcements. Available documents: ${docNames || 'none yet'}. Ask me about any of them.`;
 };
 
 const Chatbot = () => {
@@ -155,7 +86,33 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [docs, setDocs] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
   const scrollRef = useRef(null);
+  const MESSAGE_LIMIT = 30;
+
+  // Fetch live data when chatbot opens for the first time
+  useEffect(() => {
+    if (isOpen && !dataLoaded) {
+      Promise.all([
+        requirementsApi.getAll().catch(() => ({ data: [] })),
+        announcementsApi.getAll().catch(() => ({ data: [] }))
+      ]).then(([reqRes, annRes]) => {
+        // Strip _id and internal fields — only keep what the chatbot needs to display
+        const safeDocs = (reqRes.data || []).map(({ title, requirements, procedure }) => ({
+          title,
+          requirements,
+          procedure,
+        }));
+        const safeAnnouncements = (annRes.data || []).map(({ title }) => ({ title }));
+        setDocs(safeDocs);
+        setAnnouncements(safeAnnouncements);
+        setDataLoaded(true);
+      });
+    }
+  }, [isOpen, dataLoaded]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -165,16 +122,27 @@ const Chatbot = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    const trimmed = input.trim();
+    // Sanitize: strip HTML tags and limit length
+    const trimmed = input.trim().replace(/<[^>]*>/g, '').slice(0, 300);
     if (!trimmed) return;
 
-    const userMessage = { text: trimmed, sender: 'user' };
-    setMessages((prev) => [...prev, userMessage]);
+    // Rate limit: cap messages per session
+    if (messageCount >= MESSAGE_LIMIT) {
+      setMessages((prev) => [...prev, {
+        text: 'You have reached the message limit for this session. Please refresh the page to continue.',
+        sender: 'bot'
+      }]);
+      setInput('');
+      return;
+    }
+
+    setMessages((prev) => [...prev, { text: trimmed, sender: 'user' }]);
+    setMessageCount((c) => c + 1);
     setInput('');
     setIsLoading(true);
 
     setTimeout(() => {
-      const botText = getBotResponse(trimmed);
+      const botText = getBotResponse(trimmed, docs, announcements);
       setMessages((prev) => [...prev, { text: botText, sender: 'bot' }]);
       setIsLoading(false);
     }, 250);
@@ -207,10 +175,13 @@ const Chatbot = () => {
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-900/20 p-2 text-[11px] text-blue-700 dark:text-blue-300 text-center border-b border-blue-100 dark:border-blue-900/30">
-            Ask about Enrollment, Requirements, or Portal Access.
+            Ask about Enrollment, Requirements, or Announcements.
           </div>
 
           <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#f8f9fa] dark:bg-[#0a0a0a]">
+            {!dataLoaded && isOpen && (
+              <div className="text-center text-xs text-gray-400 italic">Loading latest data...</div>
+            )}
             {messages.map((msg, index) => (
               <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
