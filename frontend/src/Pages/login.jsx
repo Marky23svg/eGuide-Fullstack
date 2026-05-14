@@ -10,6 +10,7 @@ function Login() {
 
   const [activeTab, setActiveTab] = useState('login')
   const [forgotStep, setForgotStep] = useState('email')
+  const [loginStep, setLoginStep] = useState('credentials')
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false)
@@ -21,6 +22,7 @@ function Login() {
   // Login form states
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [loginOtp, setLoginOtp] = useState('')
 
   // Sign up form states
   const [regName, setRegName] = useState('')
@@ -37,6 +39,7 @@ function Login() {
 
   // Feedback messages
   const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
   const [signupError, setSignupError] = useState('')
   const [signupSuccess, setSignupSuccess] = useState('')
   const [forgotError, setForgotError] = useState('')
@@ -47,22 +50,32 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginError('')
-    console.log('1. Login button clicked')
-    console.log('2. Email:', email)
-    console.log('3. Password:', password)
+    setLoginLoading(true)
 
     try {
-      console.log('4. Calling API...')
       const response = await API.post('/auth/login', { email, password })
-      console.log('5. Response received:', response)
+
+      if (response.success && response.requiresOtp) {
+        setLoginStep('otp')
+      }
+    } catch (error) {
+      setLoginError(error.response?.data?.message || error.message)
+    } finally {
+      setLoginLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault()
+    setLoginError('')
+    setLoginLoading(true)
+
+    try {
+      const response = await API.post('/auth/verify-login-otp', { email, otp: loginOtp })
 
       if (response.success) {
-        console.log('6. Login successful!')
-        // Store token in sessionStorage (cleared when tab closes)
-        // For stronger security, request your backend to set an httpOnly cookie instead
         localStorage.setItem('token', response.token)
-localStorage.setItem('user', JSON.stringify(response.user))
-        console.log('7. Redirecting...')
+        localStorage.setItem('user', JSON.stringify(response.user))
         if (response.user.role === 'admin') {
           navigate('/admin')
         } else {
@@ -70,8 +83,9 @@ localStorage.setItem('user', JSON.stringify(response.user))
         }
       }
     } catch (error) {
-      console.error('ERROR:', error)
-      setLoginError('Login failed: ' + (error.response?.data?.message || error.message))
+      setLoginError(error.response?.data?.message || error.message)
+    } finally {
+      setLoginLoading(false)
     }
   }
 

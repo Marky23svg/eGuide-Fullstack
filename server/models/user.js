@@ -33,6 +33,14 @@ const userSchema = new mongoose.Schema({
     resetCodeExpires: {
         type: Date,
         default: null
+    },
+    loginOtp: {
+        type: String,
+        default: null
+    },
+    loginOtpExpires: {
+        type: Date,
+        default: null
     }
 });
 
