@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { AnimatePresence, motion } from 'motion/react'
 import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
-import { FiLogOut, FiRepeat } from 'react-icons/fi'
+import { FiLogOut } from 'react-icons/fi'
 
 const CARD_TRANSITION = [
   'width 0.3s cubic-bezier(0.4,0,0.2,1)',
@@ -25,9 +26,7 @@ function Navbar() {
   const scrolledRef = useRef(false)
   const profileRef = useRef(null)
   const profileOpenRef = useRef(false)
-  const mobileMenuRef = useRef(null)
 
-  // Logout function - THIS IS THE FIX
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
@@ -38,31 +37,12 @@ function Navbar() {
 
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
+  // Close mobile menu on scroll
   useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        setMobileMenuOpen(false)
-      }
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false)
-      }
-    }
-
-    const handleScroll = () => {
-      if (mobileMenuOpen) {
-        setMobileMenuOpen(false)
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    document.addEventListener('touchstart', handleClickOutside)
+    if (!mobileMenuOpen) return
+    const handleScroll = () => setMobileMenuOpen(false)
     window.addEventListener('scroll', handleScroll)
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      document.removeEventListener('touchstart', handleClickOutside)
-      window.removeEventListener('scroll', handleScroll)
-    }
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [mobileMenuOpen])
 
   useEffect(() => {
@@ -70,16 +50,13 @@ function Navbar() {
     setIsFixed(false)
     setNavVisible(true)
     setIsDark(isHeroPage)
+    setMobileMenuOpen(false)
     if (!isHeroPage) return
     setTimeout(() => {
       let dark = true
       document.querySelectorAll('[data-nav="light"]').forEach((s) => {
         const r = s.getBoundingClientRect()
         if (r.top <= 80 && r.bottom >= 80) dark = false
-      })
-      document.querySelectorAll('[data-nav="dark"]').forEach((s) => {
-        const r = s.getBoundingClientRect()
-        if (r.top <= 80 && r.bottom >= 80) dark = true
       })
       setIsDark(dark)
     }, 50)
@@ -91,10 +68,6 @@ function Navbar() {
       document.querySelectorAll('[data-nav="light"]').forEach((s) => {
         const r = s.getBoundingClientRect()
         if (r.top <= 80 && r.bottom >= 80) dark = false
-      })
-      document.querySelectorAll('[data-nav="dark"]').forEach((s) => {
-        const r = s.getBoundingClientRect()
-        if (r.top <= 80 && r.bottom >= 80) dark = true
       })
       setIsDark(dark)
     }
@@ -135,12 +108,6 @@ function Navbar() {
       }
     }
 
-    const handleClickOutside = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false)
-      }
-    }
-
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('mousemove', handleMouseMove)
     setTimeout(checkDark, 50)
@@ -156,7 +123,7 @@ function Navbar() {
   const cardStyle = {
     top: '8px',
     right: '16px',
-    width: profileOpen ? '200px' : '44px',
+    width: profileOpen ? '260px' : '44px',
     height: profileOpen ? '100px' : '44px',
     borderRadius: profileOpen ? '16px' : '50%',
     background: profileOpen ? 'white' : 'transparent',
@@ -168,124 +135,116 @@ function Navbar() {
     transition: CARD_TRANSITION,
   }
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const userName = user.name || 'Guest'
+  const userEmail = user.email || 'guest@icct.edu.ph'
+  const userInitial = userName.charAt(0) || 'U'
+
+  // Shared nav background
+  const navBg = isDark
+    ? 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.3))'
+    : 'rgba(255,255,255,0.95)'
+  const fixedNavBg = isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.98)'
+
+  // The expanding navbar content — top bar + collapsible section
+  const NavContent = ({ bg, isFixedNav }) => (
+    <nav
+      className="w-full overflow-hidden md:overflow-visible"
+      style={{
+        background: bg,
+        backdropFilter: 'blur(10px)',
+        transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
+        ...(isFixedNav && {
+          transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
+          opacity: navVisible ? 1 : 0,
+          transition: navVisible
+            ? 'opacity 300ms ease, transform 300ms ease'
+            : 'opacity 600ms ease, transform 600ms ease',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
+        }),
+      }}
+    >
+      {/* Top bar — always visible */}
+      <div className="px-4 sm:px-8 py-3 flex items-center justify-between">
+        <NavLogo textColor={textColor} subTextColor={subTextColor} />
+        <div className="hidden md:flex items-center gap-10">
+          <NavLinks textColor={textColor} navigate={navigate} />
+          <div className="w-10 h-10" />
+        </div>
+        <button
+          className={`md:hidden p-2 ${textColor}`}
+          onClick={() => setMobileMenuOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+        </button>
+      </div>
+
+      {/* Expandable section — grows the navbar height on mobile */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            key="mobile-menu"
+            className="md:hidden overflow-hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <motion.div
+              className={`px-6 pb-5 flex flex-col gap-4 border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}
+              initial={{ y: -12 }}
+              animate={{ y: 0 }}
+              exit={{ y: -12 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            >
+          {/* User info */}
+          <div className="flex items-center gap-3 pt-4">
+            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+              {userInitial}
+            </div>
+            <div>
+              <p className={`${textColor} text-sm font-semibold`}>{userName}</p>
+              <p className={`${subTextColor} text-xs`}>{userEmail}</p>
+            </div>
+          </div>
+
+          {/* Nav links */}
+          <NavLinks textColor={textColor} navigate={navigate} onNavigate={closeMobile} />
+
+          {/* Actions */}
+          <div className={`border-t ${isDark ? 'border-white/10' : 'border-gray-100'} pt-3 flex flex-col gap-1`}>
+            <button
+              onClick={() => { handleLogout(); closeMobile() }}
+              className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
+            >
+              <FiLogOut size={16} /> Log Out
+            </button>
+          </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  )
+
   return (
     <>
       {/* Absolute navbar — visible before scroll */}
       {!isFixed && (
         <div className="absolute top-0 left-0 w-full z-50">
-          <nav
-            className="w-full px-4 sm:px-8 py-3 flex items-center justify-between"
-            style={{ 
-              background: isDark ? 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.3))' : 'rgba(255,255,255,0.95)', 
-              backdropFilter: 'blur(10px)' 
-            }}
-          >
-            <NavLogo textColor={textColor} subTextColor={subTextColor} />
-            <div className="hidden md:flex items-center gap-10">
-              <NavLinks textColor={textColor} navigate={navigate} />
-              <div className="w-10 h-10" />
-            </div>
-            <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
-              <MdMenu size={24} />
-            </button>
-          </nav>
-          {mobileMenuOpen && (
-            <div ref={mobileMenuRef} className="md:hidden bg-black/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 animate-slideDown">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                    {(JSON.parse(localStorage.getItem('user') || '{}').name || 'U').charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-semibold">{JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}</p>
-                    <p className="text-white/60 text-xs">{JSON.parse(localStorage.getItem('user') || '{}').email || 'guest@icct.edu.ph'}</p>
-                  </div>
-                </div>
-                <button className="text-white p-2" onClick={closeMobile}>
-                  <MdClose size={24} />
-                </button>
-              </div>
-              <NavLinks textColor="text-white" navigate={navigate} onNavigate={closeMobile} />
-              <div className="border-t border-white/20 pt-3 flex flex-col gap-2">
-                <button
-                  onClick={() => { handleLogout(); closeMobile(); }}
-                  className="flex items-center gap-2 text-white/80 hover:text-white text-sm py-2"
-                >
-                  <FiRepeat size={16} /> Switch Account
-                </button>
-                <button
-                  onClick={() => { handleLogout(); closeMobile(); }}
-                  className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
-                >
-                  <FiLogOut size={16} /> Log Out
-                </button>
-              </div>
-            </div>
-          )}
+          <NavContent bg={navBg} isFixedNav={false} />
         </div>
       )}
 
       {/* Fixed navbar — slides in on hover after scroll */}
       {isFixed && (
         <div className="fixed top-0 left-0 w-full z-50">
-          <nav
-            className={`w-full px-4 sm:px-8 py-3 flex items-center justify-between shadow-md ${navVisible ? '' : 'pointer-events-none'}`}
-            style={{
-              background: isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.98)',
-              backdropFilter: 'blur(10px)',
-              transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
-              opacity: navVisible ? 1 : 0,
-              transition: navVisible
-                ? 'opacity 300ms ease, transform 300ms ease'
-                : 'opacity 600ms ease, transform 600ms ease',
-            }}
-          >
-            <NavLogo textColor={textColor} subTextColor={subTextColor} />
-            <div className="hidden md:flex items-center gap-10">
-              <NavLinks textColor={textColor} navigate={navigate} />
-              <div className="w-10 h-10" />
-            </div>
-            <button className={`md:hidden p-2 ${textColor}`} onClick={() => setMobileMenuOpen(o => !o)}>
-              <MdMenu size={24} />
-            </button>
-          </nav>
-          {mobileMenuOpen && (
-            <div ref={mobileMenuRef} className="md:hidden bg-white/95 backdrop-blur-sm px-6 py-4 flex flex-col gap-4 border-b border-gray-100 animate-slideDown">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                    {(JSON.parse(localStorage.getItem('user') || '{}').name || 'U').charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-gray-800 text-sm font-semibold">{JSON.parse(localStorage.getItem('user') || '{}').name || 'Guest'}</p>
-                    <p className="text-gray-500 text-xs">{JSON.parse(localStorage.getItem('user') || '{}').email || 'guest@icct.edu.ph'}</p>
-                  </div>
-                </div>
-                <button className="text-gray-800 p-2" onClick={closeMobile}>
-                  <MdClose size={24} />
-                </button>
-              </div>
-              <NavLinks textColor="text-gray-800" navigate={navigate} onNavigate={closeMobile} />
-              <div className="border-t border-gray-200 pt-3 flex flex-col gap-2">
-                <button
-                  onClick={() => { handleLogout(); closeMobile(); }}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 text-sm py-2"
-                >
-                  <FiRepeat size={16} /> Switch Account
-                </button>
-                <button
-                  onClick={() => { handleLogout(); closeMobile(); }}
-                  className="flex items-center gap-2 text-red-500 hover:text-red-600 text-sm py-2"
-                >
-                  <FiLogOut size={16} /> Log Out
-                </button>
-              </div>
-            </div>
-          )}
+          <NavContent bg={fixedNavBg} isFixedNav={true} />
         </div>
       )}
 
-      {/* Profile card */}
+      {/* Profile card — desktop only */}
       <div ref={profileRef}>
         {!isFixed && (
           <div
@@ -293,7 +252,7 @@ function Navbar() {
             style={{ position: 'absolute', ...cardStyle }}
             className="hidden md:block"
           >
-            <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} />
           </div>
         )}
         {isFixed && (
@@ -308,7 +267,7 @@ function Navbar() {
             }}
             className="hidden md:block"
           >
-            <CardContent profileOpen={profileOpen} onLogout={handleLogout} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} />
           </div>
         )}
       </div>
@@ -316,8 +275,7 @@ function Navbar() {
   )
 }
 
-function CardContent({ profileOpen, onLogout }) {
-  const [showSwitch, setShowSwitch] = useState(false)
+function CardContent({ profileOpen, onLogout, onClose }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
@@ -325,69 +283,14 @@ function CardContent({ profileOpen, onLogout }) {
 
   return (
     <>
-      {/* Switch Account Modal */}
-      {showSwitch && (
-        <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setShowSwitch(false)}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-5">
-              <p className="text-xs font-bold uppercase tracking-widest text-blue-200 mb-1">Current Account</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-black text-lg">
-                  {userInitial}
-                </div>
-                <div>
-                  <p className="text-white font-bold text-sm">{userName}</p>
-                  <p className="text-blue-200 text-xs">{userEmail}</p>
-                </div>
-              </div>
-            </div>
-            {/* Actions */}
-            <div className="p-4 flex flex-col gap-2">
-              <p className="text-xs text-gray-400 font-medium px-1 mb-1">Switch to another account</p>
-              <button
-                onClick={() => { setShowSwitch(false); onLogout() }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-600 transition text-sm font-semibold text-gray-700"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-black">+</div>
-                Log in with a different account
-              </button>
-              <div className="border-t border-gray-100 my-1" />
-              <button
-                onClick={() => { setShowSwitch(false); onLogout() }}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl hover:bg-red-50 transition text-sm font-semibold text-red-400"
-              >
-                <div className="w-8 h-8 rounded-full bg-red-50 text-red-400 flex items-center justify-center">
-                  <FiLogOut size={14} />
-                </div>
-                Log Out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Avatar icon */}
       <div
         style={{
-          position: 'absolute',
-          top: '6px',
-          right: profileOpen ? '155px' : '2px',
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
+          position: 'relative', top: '4px',
+          right: profileOpen ? '210px' : '2px',
+          width: '40px', height: '40px', borderRadius: '50%',
           background: profileOpen ? '#111827' : '#2563eb',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontWeight: 'bold',
-          fontSize: '14px',
+          color: 'white', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontWeight: 'bold', fontSize: '14px',
           transform: profileOpen ? 'rotate(-360deg)' : 'rotate(0deg)',
           transition: 'right 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.4s ease, background 0.2s ease',
           zIndex: 2,
@@ -395,44 +298,56 @@ function CardContent({ profileOpen, onLogout }) {
       >
         {userInitial}
       </div>
-
-      {/* Name + email */}
-      <div
+      {/* X close button — only visible when open */}
+      <button
+        onClick={onClose}
         style={{
           position: 'absolute',
-          top: '8px',
-          left: '10px',
-          right: '10px',
-          direction: 'ltr',
-          textAlign: 'center',
+          top: '6px',
+          right: '8px',
+          width: '24px',
+          height: '24px',
+          borderRadius: '50%',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: profileOpen ? 1 : 0,
+          pointerEvents: profileOpen ? 'auto' : 'none',
+          transition: 'opacity 0.2s ease 0.15s',
+          zIndex: 3,
+          color: '#9ca3af',
+        }}
+        aria-label="Close"
+      >
+        ✕
+      </button>
+      <div
+        style={{
+          position: 'absolute', top: '8px', left: '55px', 
+          direction: 'ltr', textAlign: 'left',
+          padding: '2px',
           opacity: profileOpen ? 1 : 0,
           transform: profileOpen ? 'translateX(0)' : 'translateX(20px)',
           transition: profileOpen ? 'opacity 0.2s ease 0.2s' : 'opacity 0.05s ease',
+          width:'100%',
+          height:'50px',
         }}
       >
         <p className="text-sm font-bold text-gray-800 leading-tight whitespace-nowrap">{userName}</p>
+
         <p className="text-xs text-gray-400 whitespace-nowrap mt-0.5">{userEmail}</p>
       </div>
-
-      {/* Action buttons */}
       <div
         style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          direction: 'ltr',
-          borderTop: '1px solid #f3f4f6',
+          position: 'absolute', bottom: 10, left: 0, right: 0,
+          direction: 'ltr', borderTop: '1px solid #f3f4f6',
           opacity: profileOpen ? 1 : 0,
           transition: profileOpen ? 'opacity 0.2s ease 0.25s' : 'opacity 0.05s ease',
         }}
       >
-        <button
-          onClick={() => setShowSwitch(true)}
-          className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-gray-500 hover:bg-gray-50 transition"
-        >
-          <FiRepeat size={11} /> Switch Account
-        </button>
         <button
           onClick={onLogout}
           className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-red-400 hover:bg-red-50 transition"
@@ -467,18 +382,6 @@ function NavLogo({ textColor, subTextColor }) {
 }
 
 function NavLinks({ textColor, navigate, onNavigate }) {
-  const isHomepage = window.location.pathname === '/home'
-
-  const handleAnnouncement = () => {
-    navigate('/announcements')
-    onNavigate?.()
-  }
-
-  const handleRequirements = () => {
-    navigate('/requirements')
-    onNavigate?.()
-  }
-
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-10">
       <span
@@ -489,14 +392,14 @@ function NavLinks({ textColor, navigate, onNavigate }) {
         Home
       </span>
       <span
-        onClick={handleAnnouncement}
+        onClick={() => { navigate('/announcements'); onNavigate?.() }}
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
         style={{ letterSpacing: '0.2em' }}
       >
         Announcement
       </span>
       <span
-        onClick={handleRequirements}
+        onClick={() => { navigate('/requirements'); onNavigate?.() }}
         className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
         style={{ letterSpacing: '0.2em' }}
       >

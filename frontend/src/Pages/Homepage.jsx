@@ -138,8 +138,14 @@ function Homepage() {
               index % 2 !== 0 ? 'md:flex-row-reverse' : ''
             }`}
           >
-            <div className="anim-image w-full md:w-1/2 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.15)] bg-blue-50 flex items-center justify-center h-64">
-              <span className="text-6xl">📢</span>
+            <div className="anim-image w-full md:w-1/2 rounded-2xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.15)] h-64">
+              {item.image ? (
+                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <span className="text-5xl">📢</span>
+                </div>
+              )}
             </div>
             <div className="anim-text w-full md:w-1/2 flex flex-col gap-4">
               <span className="text-xs font-semibold text-blue-600 uppercase tracking-widest">Announcement</span>

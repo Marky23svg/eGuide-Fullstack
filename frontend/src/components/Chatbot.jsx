@@ -41,17 +41,71 @@ const detectDoc = (text, docs) => {
   return bestMatch;
 };
 
+// Format a date string from either the custom `date` field or `date_posted`
+const formatDate = (date, date_posted) => {
+  if (date && date.trim()) return date.trim();
+  if (date_posted) return new Date(date_posted).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return null;
+};
+
+// Find a specific announcement by title keyword match
+const detectAnnouncement = (text, announcements) => {
+  const inputWords = text.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+  if (inputWords.length === 0) return null;
+  let bestMatch = null;
+  let bestScore = 0;
+  for (const ann of announcements) {
+    const titleWords = ann.title.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
+    const matches = titleWords.filter((word) =>
+      inputWords.some((iw) => iw.includes(word) || word.includes(iw))
+    );
+    const score = matches.length / titleWords.length;
+    if (score > bestScore && score >= 0.5) {
+      bestScore = score;
+      bestMatch = ann;
+    }
+  }
+  return bestMatch;
+};
+
+// Format full announcement detail for chatbot response
+const formatAnnouncementDetail = (ann) => {
+  const dateStr = formatDate(ann.date, ann.date_posted);
+  const lines = [`📢 ${ann.title}`];
+  if (dateStr) lines.push(`📅 Date: ${dateStr}`);
+  if (ann.category) lines.push(`🏷️ Category: ${ann.category}`);
+  const body = ann.description || ann.content || '';
+  if (body) lines.push(`\n${body}`);
+  return lines.join('\n');
+};
+
 const getBotResponse = (text, docs, announcements) => {
   const lower = text.toLowerCase();
 
   if (/\b(hi|hello|hey)\b/.test(lower)) {
     return 'Hi there! Ask me about enrollment, documents, requirements, or the latest announcements.';
   }
-  if (lower.includes('announcement') || lower.includes('news') || lower.includes('update') || lower.includes('notice')) {
-    if (announcements.length === 0) return 'There are no announcements at the moment. Check back later.';
-    const list = announcements.slice(0, 3).map((a, i) => `${i + 1}. ${a.title}`).join('\n');
-    return `Here are the latest announcements:\n\n${list}\n\nVisit the Announcements page for full details.`;
+
+  // Check for specific announcement title match first
+  const matchedAnn = detectAnnouncement(text, announcements);
+  if (matchedAnn && (
+    lower.includes('when') || lower.includes('date') || lower.includes('about') ||
+    lower.includes('what') || lower.includes('tell') || lower.includes('details') ||
+    matchedAnn.title.toLowerCase().split(/\s+/).filter(w => !STOP_WORDS.has(w))
+      .some(w => lower.includes(w))
+  )) {
+    return formatAnnouncementDetail(matchedAnn);
   }
+
+  if (lower.includes('announcement') || lower.includes('news') || lower.includes('update') || lower.includes('notice') || lower.includes('latest') || lower.includes('recent')) {
+    if (announcements.length === 0) return 'There are no announcements at the moment. Check back later.';
+    const list = announcements.slice(0, 5).map((a, i) => {
+      const dateStr = formatDate(a.date, a.date_posted);
+      return `${i + 1}. ${a.title}${dateStr ? `\n   📅 ${dateStr}` : ''}`;
+    }).join('\n');
+    return `Here are the latest announcements:\n\n${list}\n\nAsk me about any specific one for full details.`;
+  }
+
   if (lower.includes('what documents') || lower.includes('list of requirements') || lower.includes('available requirements')) {
     if (docs.length === 0) return 'No requirements are available right now.';
     const list = docs.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
@@ -92,7 +146,9 @@ const Chatbot = () => {
         announcementsApi.getAll().catch(() => ({ data: [] })),
       ]).then(([reqRes, annRes]) => {
         setDocs((reqRes.data || []).map(({ title, requirements, procedure }) => ({ title, requirements, procedure })));
-        setAnnouncements((annRes.data || []).map(({ title }) => ({ title })));
+        setAnnouncements((annRes.data || []).map(({ title, date, date_posted, content, description, category }) => ({
+          title, date, date_posted, content, description, category,
+        })));
         setDataLoaded(true);
       });
     }
@@ -284,7 +340,6 @@ const Chatbot = () => {
                     <RiSendPlaneFill />
                   </button>
                 </div>
-                <p className="text-[10px] text-center text-gray-400 mt-2 italic">Powered by eGuide ICCT Intelligence</p>
               </form>
             </div>
           </motion.div>
