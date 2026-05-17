@@ -5,6 +5,21 @@ import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut } from 'react-icons/fi'
 
+// ─── STYLES FROM NAVBAR2 ──────────────────────────────────────────────────
+const NAV_TEXT_STYLE = {
+  color:      '#ffffff',
+  fontWeight: '700',
+  textShadow: '0 1px 12px rgba(0,0,0,0.7), 0 0px 3px rgba(0,0,0,0.55)',
+  transition: 'opacity 0.2s ease',
+}
+
+const NAV_SUBTEXT_STYLE = {
+  color:      'rgba(255,255,255,0.75)',
+  fontWeight: '600',
+  textShadow: '0 1px 8px rgba(0,0,0,0.6)',
+}
+
+// Keeping the original pill transition timing configuration untouched
 const CARD_TRANSITION = [
   'width 0.3s cubic-bezier(0.4,0,0.2,1)',
   'height 0.3s cubic-bezier(0.4,0,0.2,1)',
@@ -117,17 +132,18 @@ function Navbar() {
     }
   }, [])
 
-  const textColor = isDark ? 'text-white' : 'text-gray-900'
-  const subTextColor = isDark ? 'text-white/60' : 'text-gray-500'
-
+  // Design from Navbar2 profiles card configuration
   const cardStyle = {
-    top: '8px',
+    top: '10px',
     right: '16px',
-    width: profileOpen ? '260px' : '44px',
-    height: profileOpen ? '100px' : '44px',
-    borderRadius: profileOpen ? '16px' : '50%',
-    background: profileOpen ? 'white' : 'transparent',
-    boxShadow: profileOpen ? '0 8px 40px rgba(0,0,0,0.15)' : 'none',
+    width: profileOpen ? '228px' : '40px',
+    height: profileOpen ? '112px' : '40px',
+    borderRadius: profileOpen ? '20px' : '50%',
+    background: profileOpen ? 'rgba(255,255,255,0.94)' : 'rgba(37,99,235,0.95)',
+    backdropFilter: profileOpen ? 'blur(20px) saturate(180%)' : 'none',
+    boxShadow: profileOpen 
+      ? '0 8px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.06)' 
+      : '0 2px 14px rgba(37,99,235,0.45)',
     overflow: 'hidden',
     cursor: profileOpen ? 'default' : 'pointer',
     zIndex: 200,
@@ -138,41 +154,20 @@ function Navbar() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
-  const userInitial = userName.charAt(0) || 'U'
+  const userInitial = (userName.charAt(0) || 'U').toUpperCase()
 
-  // Shared nav background
-  const navBg = isDark
-    ? 'linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.3))'
-    : 'rgba(255,255,255,0.95)'
-  const fixedNavBg = isDark ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.98)'
-
-  // The expanding navbar content — top bar + collapsible section
-  const NavContent = ({ bg, isFixedNav }) => (
-    <nav
-      className="w-full overflow-hidden md:overflow-visible"
-      style={{
-        background: bg,
-        backdropFilter: 'blur(10px)',
-        transition: 'all 0.35s cubic-bezier(0.4,0,0.2,1)',
-        ...(isFixedNav && {
-          transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
-          opacity: navVisible ? 1 : 0,
-          transition: navVisible
-            ? 'opacity 300ms ease, transform 300ms ease'
-            : 'opacity 600ms ease, transform 600ms ease',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.1)',
-        }),
-      }}
-    >
-      {/* Top bar — always visible */}
+  const NavContent = () => (
+    <nav className="w-full overflow-hidden md:overflow-visible">
+      {/* Top bar */}
       <div className="px-4 sm:px-8 py-3 flex items-center justify-between">
-        <NavLogo textColor={textColor} subTextColor={subTextColor} />
+        <NavLogo />
         <div className="hidden md:flex items-center gap-10">
-          <NavLinks textColor={textColor} navigate={navigate} />
-          <div className="w-10 h-10" />
+          <NavLinks navigate={navigate} />
+          <div className="w-12 h-10 shrink-0" />
         </div>
         <button
-          className={`md:hidden p-2 ${textColor}`}
+          className="md:hidden p-2"
+          style={{ color: '#fff', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}
           onClick={() => setMobileMenuOpen(o => !o)}
           aria-label="Toggle menu"
         >
@@ -180,7 +175,7 @@ function Navbar() {
         </button>
       </div>
 
-      {/* Expandable section — grows the navbar height on mobile */}
+      {/* Mobile expandable */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -192,35 +187,33 @@ function Navbar() {
             transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
             <motion.div
-              className={`px-6 pb-5 flex flex-col gap-4 border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}
+              className="px-6 pb-5 flex flex-col gap-4 border-t border-white/10"
               initial={{ y: -12 }}
               animate={{ y: 0 }}
               exit={{ y: -12 }}
               transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             >
-          {/* User info */}
-          <div className="flex items-center gap-3 pt-4">
-            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-              {userInitial}
-            </div>
-            <div>
-              <p className={`${textColor} text-sm font-semibold`}>{userName}</p>
-              <p className={`${subTextColor} text-xs`}>{userEmail}</p>
-            </div>
-          </div>
+              {/* User info */}
+              <div className="flex items-center gap-3 pt-4">
+                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  {userInitial}
+                </div>
+                <div>
+                  <p style={{ ...NAV_TEXT_STYLE, fontSize: '14px' }}>{userName}</p>
+                  <p style={{ ...NAV_SUBTEXT_STYLE, fontSize: '12px' }}>{userEmail}</p>
+                </div>
+              </div>
 
-          {/* Nav links */}
-          <NavLinks textColor={textColor} navigate={navigate} onNavigate={closeMobile} />
+              <NavLinks navigate={navigate} onNavigate={closeMobile} />
 
-          {/* Actions */}
-          <div className={`border-t ${isDark ? 'border-white/10' : 'border-gray-100'} pt-3 flex flex-col gap-1`}>
-            <button
-              onClick={() => { handleLogout(); closeMobile() }}
-              className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
-            >
-              <FiLogOut size={16} /> Log Out
-            </button>
-          </div>
+              <div className="border-t border-white/10 pt-3">
+                <button
+                  onClick={() => { handleLogout(); closeMobile() }}
+                  className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
+                >
+                  <FiLogOut size={16} /> Log Out
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -230,26 +223,46 @@ function Navbar() {
 
   return (
     <>
-      {/* Absolute navbar — visible before scroll */}
-      {!isFixed && (
-        <div className="absolute top-0 left-0 w-full z-50">
-          <NavContent bg={navBg} isFixedNav={false} />
-        </div>
-      )}
+      {/* Absolute Navbar (Static at top) */}
+      <div 
+        className="absolute top-0 left-0 w-full z-50"
+        style={{
+          background: 'transparent',
+          opacity: isFixed ? 0 : 1,
+          pointerEvents: isFixed ? 'none' : 'auto',
+          transition: 'opacity 250ms ease',
+        }}
+      >
+        <NavContent />
+      </div>
 
-      {/* Fixed navbar — slides in on hover after scroll */}
-      {isFixed && (
-        <div className="fixed top-0 left-0 w-full z-50">
-          <NavContent bg={fixedNavBg} isFixedNav={true} />
-        </div>
-      )}
+      {/* Fixed Navbar (Slides down perfectly when header is passed) */}
+      <div 
+        className="fixed top-0 left-0 w-full z-50"
+        style={{
+          background: 'transparent',
+          transform: (isFixed && navVisible) ? 'translateY(0)' : 'translateY(-120%)',
+          opacity: (isFixed && navVisible) ? 1 : 0,
+          pointerEvents: (isFixed && navVisible) ? 'auto' : 'none',
+          transition: (isFixed && navVisible)
+            ? 'transform 320ms cubic-bezier(0.4,0,0.2,1), opacity 250ms ease'
+            : 'transform 550ms cubic-bezier(0.4,0,0.2,1), opacity 550ms ease',
+        }}
+      >
+        <NavContent />
+      </div>
 
       {/* Profile card — desktop only */}
       <div ref={profileRef}>
         {!isFixed && (
           <div
             onClick={() => !profileOpen && setProfileOpen(true)}
-            style={{ position: 'absolute', ...cardStyle }}
+            style={{ 
+              position: 'absolute', 
+              ...cardStyle,
+              opacity: 1,
+              transition: CARD_TRANSITION,
+            }}
             className="hidden md:block"
           >
             <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} />
@@ -262,8 +275,14 @@ function Navbar() {
               position: 'fixed',
               ...cardStyle,
               transform: navVisible ? 'translateY(0)' : 'translateY(-300%)',
+              opacity: navVisible ? 1 : 0, // Adds smooth fade effect synchronized to look-away state
               pointerEvents: navVisible ? 'auto' : 'none',
-              transition: `${CARD_TRANSITION}, ${navVisible ? 'transform 300ms ease' : 'transform 900ms ease'}`,
+              // Integrates the exact same opacity ease-timings used by the navigation bar wrapper
+              transition: `${CARD_TRANSITION}, ${
+                navVisible 
+                  ? 'transform 300ms ease, opacity 250ms ease' 
+                  : 'transform 600ms ease, opacity 550ms ease'
+              }`,
             }}
             className="hidden md:block"
           >
@@ -279,100 +298,155 @@ function CardContent({ profileOpen, onLogout, onClose }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
-  const userInitial = userName.charAt(0) || 'U'
+  const userInitial = (userName.charAt(0) || 'U').toUpperCase()
 
   return (
     <>
       <div
         style={{
-          position: 'relative', top: '4px',
-          right: profileOpen ? '210px' : '2px',
-          width: '40px', height: '40px', borderRadius: '50%',
-          background: profileOpen ? '#111827' : '#2563eb',
-          color: 'white', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontWeight: 'bold', fontSize: '14px',
-          transform: profileOpen ? 'rotate(-360deg)' : 'rotate(0deg)',
-          transition: 'right 0.3s cubic-bezier(0.4,0,0.2,1), transform 0.4s ease, background 0.2s ease',
-          zIndex: 2,
+          position:       'absolute',
+          top:            profileOpen ? '12px' : '0px',
+          left:           profileOpen ? '12px' : '0px',
+          width:          '40px',
+          height:         '40px',
+          borderRadius:   '50%',
+          background:     profileOpen ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)' : 'transparent',
+          color:          '#fff',
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          fontWeight:     '700',
+          fontSize:       '15px',
+          letterSpacing:  '0.03em',
+          transform:      profileOpen ? 'rotate(-360deg)' : 'rotate(0deg)',
+          transition:     'top 0.42s cubic-bezier(0.4,0,0.2,1), left 0.42s cubic-bezier(0.4,0,0.2,1), background 0.2s ease, transform 0.4s ease',
+          zIndex:         2,
+          userSelect:     'none',
         }}
       >
         {userInitial}
       </div>
-      {/* X close button — only visible when open */}
+
       <button
-        onClick={onClose}
+        onClick={(e) => { e.stopPropagation(); onClose() }}
         style={{
-          position: 'absolute',
-          top: '6px',
-          right: '8px',
-          width: '24px',
-          height: '24px',
-          borderRadius: '50%',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
+          position:       'absolute',
+          top:            '10px',
+          right:          '10px',
+          width:          '22px',
+          height:         '22px',
+          borderRadius:   '50%',
+          background:     'rgba(0,0,0,0.07)',
+          border:         'none',
+          cursor:         'pointer',
+          display:        'flex',
+          alignItems:     'center',
           justifyContent: 'center',
-          opacity: profileOpen ? 1 : 0,
-          pointerEvents: profileOpen ? 'auto' : 'none',
-          transition: 'opacity 0.2s ease 0.15s',
-          zIndex: 3,
-          color: '#9ca3af',
+          fontSize:       '9px',
+          color:          '#6b7280',
+          opacity:        profileOpen ? 1 : 0,
+          pointerEvents:  profileOpen ? 'auto' : 'none',
+          transition:     'opacity 0.2s ease 0.15s',
+          zIndex:         3,
         }}
         aria-label="Close"
       >
         ✕
       </button>
+
       <div
         style={{
-          position: 'absolute', top: '8px', left: '55px', 
-          direction: 'ltr', textAlign: 'left',
-          padding: '2px',
-          opacity: profileOpen ? 1 : 0,
-          transform: profileOpen ? 'translateX(0)' : 'translateX(20px)',
+          position:   'absolute',
+          top:        '14px',
+          left:       '60px',
+          right:      '32px',
+          direction:  'ltr',
+          textAlign:  'left',
+          opacity:    profileOpen ? 1 : 0,
+          transform:  profileOpen ? 'translateX(0)' : 'translateX(20px)',
           transition: profileOpen ? 'opacity 0.2s ease 0.2s' : 'opacity 0.05s ease',
-          width:'100%',
-          height:'50px',
+          pointerEvents: 'none',
         }}
       >
-        <p className="text-sm font-bold text-gray-800 leading-tight whitespace-nowrap">{userName}</p>
-
-        <p className="text-xs text-gray-400 whitespace-nowrap mt-0.5">{userEmail}</p>
+        <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827', lineHeight: 1.25, whiteSpace: 'nowrap' }}>
+          {userName}
+        </p>
+        <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {userEmail}
+        </p>
       </div>
+
       <div
         style={{
-          position: 'absolute', bottom: 10, left: 0, right: 0,
-          direction: 'ltr', borderTop: '1px solid #f3f4f6',
-          opacity: profileOpen ? 1 : 0,
-          transition: profileOpen ? 'opacity 0.2s ease 0.25s' : 'opacity 0.05s ease',
+          position:      'absolute',
+          bottom:        0,
+          left:          0,
+          right:         0,
+          direction:     'ltr',
+          borderTop:     '1px solid rgba(0,0,0,0.07)',
+          opacity:       profileOpen ? 1 : 0,
+          transition:    profileOpen ? 'opacity 0.2s ease 0.25s' : 'opacity 0.05s ease',
+          pointerEvents: profileOpen ? 'auto' : 'none',
         }}
       >
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-1.5 px-4 py-1 text-xs text-red-400 hover:bg-red-50 transition"
+          style={{
+            width:          '100%',
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: 'center',
+            gap:            '5px',
+            padding:        '9px 16px',
+            fontSize:       '11px',
+            fontWeight:     '600',
+            color:          '#f87171',
+            background:     'transparent',
+            border:         'none',
+            cursor:         'pointer',
+            letterSpacing:  '0.05em',
+            transition:     'background 0.15s ease, color 0.15s ease',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; e.currentTarget.style.color = '#ef4444' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent';           e.currentTarget.style.color = '#f87171' }}
         >
-          <FiLogOut size={11} /> Log Out
+          <FiLogOut size={11} /> LOG OUT
         </button>
       </div>
     </>
   )
 }
 
-function NavLogo({ textColor, subTextColor }) {
+function NavLogo() {
   return (
     <div className="flex items-center gap-3">
-      <img src={icctLogo} alt="ICCT Logo" className="h-12 w-12 rounded-full object-cover border-2 border-white/30" />
+      <img 
+        src={icctLogo} 
+        alt="ICCT Logo" 
+        className="h-12 w-12 rounded-full object-cover border-2 border-white/30" 
+        style={{ filter: 'drop-shadow(0 1px 6px rgba(0,0,0,0.3))' }}
+      />
       <div className="flex flex-col leading-none">
         <span
-          className={`text-2xl block ${textColor}`}
-          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.08em', lineHeight: 1 }}
+          style={{
+            ...NAV_TEXT_STYLE,
+            fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
+            fontSize:      '1.5rem',
+            letterSpacing: '0.08em',
+            lineHeight:    1,
+          }}
         >
           ICCT
         </span>
         <span
-          className={`text-xs uppercase block ${subTextColor}`}
-          style={{ fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', letterSpacing: '0.05em', lineHeight: 1 }}
+          style={{
+            ...NAV_SUBTEXT_STYLE,
+            fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
+            fontSize:      '0.7rem',
+            letterSpacing: '0.05em',
+            lineHeight:    1,
+            textTransform: 'uppercase',
+          }}
         >
           COLLEGES
         </span>
@@ -381,30 +455,29 @@ function NavLogo({ textColor, subTextColor }) {
   )
 }
 
-function NavLinks({ textColor, navigate, onNavigate }) {
+function NavLinks({ navigate, onNavigate }) {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-10">
-      <span
-        onClick={() => { navigate('/home'); onNavigate?.() }}
-        className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
-        style={{ letterSpacing: '0.2em' }}
-      >
-        Home
-      </span>
-      <span
-        onClick={() => { navigate('/announcements'); onNavigate?.() }}
-        className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
-        style={{ letterSpacing: '0.2em' }}
-      >
-        Announcement
-      </span>
-      <span
-        onClick={() => { navigate('/requirements'); onNavigate?.() }}
-        className={`text-xs uppercase hover:opacity-70 transition cursor-pointer ${textColor}`}
-        style={{ letterSpacing: '0.2em' }}
-      >
-        Documents
-      </span>
+      {[
+        { label: 'Home',         path: '/home' },
+        { label: 'Announcement', path: '/announcements' },
+        { label: 'Documents',    path: '/requirements' },
+      ].map(({ label, path }) => (
+        <span
+          key={path}
+          onClick={() => { navigate(path); onNavigate?.() }}
+          style={{
+            ...NAV_TEXT_STYLE,
+            fontSize:      '0.7rem',
+            letterSpacing: '0.2em',
+            cursor:        'pointer',
+            textTransform: 'uppercase',
+          }}
+          className="hover:opacity-70 transition-opacity"
+        >
+          {label}
+        </span>
+      ))}
     </div>
   )
 }
