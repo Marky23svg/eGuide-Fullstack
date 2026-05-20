@@ -5,7 +5,7 @@ import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut } from 'react-icons/fi'
 
-// ─── STYLES FROM NAVBAR2 ──────────────────────────────────────────────────
+// ─── STYLES ──────────────────────────────────────────────────
 const NAV_TEXT_STYLE = {
   color:      '#ffffff',
   fontWeight: '700',
@@ -19,7 +19,6 @@ const NAV_SUBTEXT_STYLE = {
   textShadow: '0 1px 8px rgba(0,0,0,0.6)',
 }
 
-// Keeping the original pill transition timing configuration untouched
 const CARD_TRANSITION = [
   'width 0.3s cubic-bezier(0.4,0,0.2,1)',
   'height 0.3s cubic-bezier(0.4,0,0.2,1)',
@@ -27,6 +26,131 @@ const CARD_TRANSITION = [
   'background 0.2s ease',
   'box-shadow 0.3s ease',
 ].join(', ')
+
+// Separate Mobile Menu Panel Component
+function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userInitial, handleLogout }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop overlay - higher z-index */}
+          <motion.div
+            className="fixed inset-0 bg-black/60 z-[60] md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={onClose}
+          />
+          
+          {/* Menu panel - very high z-index to be above chatbot */}
+          <motion.div
+            className="fixed top-0 right-0 h-full w-72 z-[70] md:hidden overflow-y-auto"
+            style={{
+              backgroundColor: '#0f0f23',
+              boxShadow: '-8px 0 32px rgba(0,0,0,0.5)',
+            }}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'tween', duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <div className="flex flex-col min-h-full" style={{ backgroundColor: '#16213e' }}>
+              {/* Header row with profile and X button side by side */}
+              <motion.div
+                className="flex items-center justify-between px-5 pt-5 pb-4"
+                style={{ backgroundColor: '#16213e' }}
+                initial={{ x: 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-lg">
+                    {userInitial}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold text-sm truncate">{userName}</p>
+                    <p className="text-gray-400 text-xs truncate">{userEmail}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-white/80 hover:text-white transition-colors shrink-0"
+                  aria-label="Close menu"
+                >
+                  <MdClose size={24} />
+                </button>
+              </motion.div>
+
+              {/* Navigation links - below the profile row */}
+              <div className="flex-1 px-5 pt-2" style={{ backgroundColor: '#16213e' }}>
+                <motion.div
+                  className="flex flex-col gap-1"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.08,
+                        delayChildren: 0.15,
+                      },
+                    },
+                  }}
+                >
+                  {[
+                    { label: 'Home', path: '/home' },
+                    { label: 'Announcement', path: '/announcements' },
+                    { label: 'Documents', path: '/requirements' },
+                  ].map(({ label, path }) => (
+                    <motion.div
+                      key={path}
+                      variants={{
+                        hidden: { y: -20, opacity: 0 },
+                        visible: { y: 0, opacity: 1 },
+                      }}
+                      transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      <button
+                        onClick={() => {
+                          navigate(path)
+                          onClose()
+                        }}
+                        className="w-full text-left text-white/90 hover:text-white text-base font-semibold py-3 px-4 rounded-lg hover:bg-white/10 transition-all duration-200"
+                      >
+                        {label}
+                      </button>
+                    </motion.div>
+                  ))}
+                  
+                  {/* Logout button */}
+                  <motion.div
+                    variants={{
+                      hidden: { y: -20, opacity: 0 },
+                      visible: { y: 0, opacity: 1 },
+                    }}
+                    transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    className="mt-4 pt-4 border-t border-white/10"
+                  >
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        onClose()
+                      }}
+                      className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 text-base font-semibold py-3 px-4 rounded-lg hover:bg-red-500/10 transition-all duration-200"
+                    >
+                      <FiLogOut size={18} /> Log Out
+                    </button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  )
+}
 
 function Navbar() {
   const navigate = useNavigate()
@@ -49,6 +173,7 @@ function Navbar() {
   }
 
   const closeMobile = useCallback(() => setMobileMenuOpen(false), [])
+  const openMobile = useCallback(() => setMobileMenuOpen(true), [])
 
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
@@ -132,9 +257,8 @@ function Navbar() {
     }
   }, [])
 
-  // Design from Navbar2 profiles card configuration
   const cardStyle = {
-    top: '10px',
+    top: '15px',
     right: '16px',
     width: profileOpen ? '228px' : '40px',
     height: profileOpen ? '112px' : '40px',
@@ -165,88 +289,55 @@ function Navbar() {
           <NavLinks navigate={navigate} />
           <div className="w-12 h-10 shrink-0" />
         </div>
+        {/* Menu Button - only visible on mobile - triggers the separate menu panel */}
         <button
           className="md:hidden p-2"
           style={{ color: '#fff', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}
-          onClick={() => setMobileMenuOpen(o => !o)}
-          aria-label="Toggle menu"
+          onClick={openMobile}
+          aria-label="Open menu"
         >
-          {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+          <MdMenu size={24} />
         </button>
       </div>
-
-      {/* Mobile expandable */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            key="mobile-menu"
-            className="md:hidden overflow-hidden"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-          >
-            <motion.div
-              className="px-6 pb-5 flex flex-col gap-4 border-t border-white/10"
-              initial={{ y: -12 }}
-              animate={{ y: 0 }}
-              exit={{ y: -12 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-            >
-              {/* User info */}
-              <div className="flex items-center gap-3 pt-4">
-                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
-                  {userInitial}
-                </div>
-                <div>
-                  <p style={{ ...NAV_TEXT_STYLE, fontSize: '14px' }}>{userName}</p>
-                  <p style={{ ...NAV_SUBTEXT_STYLE, fontSize: '12px' }}>{userEmail}</p>
-                </div>
-              </div>
-
-              <NavLinks navigate={navigate} onNavigate={closeMobile} />
-
-              <div className="border-t border-white/10 pt-3">
-                <button
-                  onClick={() => { handleLogout(); closeMobile() }}
-                  className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm py-2"
-                >
-                  <FiLogOut size={16} /> Log Out
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </nav>
   )
 
   return (
     <>
+      {/* Separate Mobile Menu Panel - not inside navbar */}
+      <MobileMenuPanel 
+        isOpen={mobileMenuOpen}
+        onClose={closeMobile}
+        navigate={navigate}
+        userName={userName}
+        userEmail={userEmail}
+        userInitial={userInitial}
+        handleLogout={handleLogout}
+      />
+
       {/* Absolute Navbar (Static at top) */}
       <div 
-        className="absolute top-0 left-0 w-full z-50"
+        className="absolute top-0 left-0 w-full z-40"
         style={{
           background: 'transparent',
           opacity: isFixed ? 0 : 1,
           pointerEvents: isFixed ? 'none' : 'auto',
-          transition: 'opacity 250ms ease',
         }}
       >
         <NavContent />
       </div>
 
-      {/* Fixed Navbar (Slides down perfectly when header is passed) */}
+      {/* Fixed Navbar (Slides down when header is passed) */}
       <div 
-        className="fixed top-0 left-0 w-full z-50"
+        className="fixed top-0 left-0 w-full z-40"
         style={{
-          background: 'transparent',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.22) 35%, rgba(0,0,0,0.06) 55%, rgba(0,0,0,0) 70%)',
           transform: (isFixed && navVisible) ? 'translateY(0)' : 'translateY(-120%)',
           opacity: (isFixed && navVisible) ? 1 : 0,
           pointerEvents: (isFixed && navVisible) ? 'auto' : 'none',
           transition: (isFixed && navVisible)
-            ? 'transform 320ms cubic-bezier(0.4,0,0.2,1), opacity 250ms ease'
-            : 'transform 550ms cubic-bezier(0.4,0,0.2,1), opacity 550ms ease',
+            ? 'transform 250ms cubic-bezier(0.4,0,0.2,1), opacity 250ms ease'
+            : 'transform 400ms cubic-bezier(0.4,0,0.2,1), opacity 550ms ease',
         }}
       >
         <NavContent />
@@ -275,9 +366,8 @@ function Navbar() {
               position: 'fixed',
               ...cardStyle,
               transform: navVisible ? 'translateY(0)' : 'translateY(-300%)',
-              opacity: navVisible ? 1 : 0, // Adds smooth fade effect synchronized to look-away state
+              opacity: navVisible ? 1 : 0,
               pointerEvents: navVisible ? 'auto' : 'none',
-              // Integrates the exact same opacity ease-timings used by the navigation bar wrapper
               transition: `${CARD_TRANSITION}, ${
                 navVisible 
                   ? 'transform 300ms ease, opacity 250ms ease' 
