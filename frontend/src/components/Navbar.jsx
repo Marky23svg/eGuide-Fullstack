@@ -315,9 +315,9 @@ function Navbar() {
         handleLogout={handleLogout}
       />
 
-      {/* Absolute Navbar (Static at top) */}
+      {/* Absolute Navbar (Static at top) — hidden on mobile once scrolled */}
       <div 
-        className="absolute top-0 left-0 w-full z-40"
+        className="absolute top-0 left-0 w-full z-40 md:block hidden"
         style={{
           background: 'transparent',
           opacity: isFixed ? 0 : 1,
@@ -327,7 +327,7 @@ function Navbar() {
         <NavContent />
       </div>
 
-      {/* Fixed Navbar (Slides down when header is passed) */}
+      {/* Fixed Navbar — desktop: hover to show, mobile: always visible */}
       <div 
         className="fixed top-0 left-0 w-full z-40 bg-gray-950"
         style={{
@@ -338,7 +338,13 @@ function Navbar() {
             ? 'transform 250ms cubic-bezier(0.4,0,0.2,1), opacity 250ms ease'
             : 'transform 400ms cubic-bezier(0.4,0,0.2,1), opacity 550ms ease',
         }}
+        // desktop only — mobile uses the one below
       >
+        <div className="hidden md:block"><NavContent /></div>
+      </div>
+
+      {/* Mobile-only static navbar — always fixed at top */}
+      <div className="fixed top-0 left-0 w-full z-40 bg-gray-950 md:hidden">
         <NavContent />
       </div>
 

@@ -197,7 +197,7 @@ const Chatbot = () => {
             whileHover={{ scale: 1.1 }}
             style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 50, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
-            <img src="/icon_chatbot.png" alt="Chat" style={{ width: '100px', height: '100px', objectFit: 'contain', display: 'block' }} />
+            <img src="/icon_chatbot.png" alt="Chat" style={{ width: '130px', height: '130px', objectFit: 'contain', display: 'block' }} />
           </motion.button>
         )}
       </AnimatePresence>
