@@ -11,17 +11,51 @@ function Documents() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
+  const [progressMap, setProgressMap] = useState({})
 
   useEffect(() => {
     API.get('/requirements')
-      .then(res => setRequirements(res.data))
+      .then(res => {
+        setRequirements(res.data)
+        // seed progressMap from localStorage
+        const map = {}
+        res.data.forEach(item => {
+          const steps = item.procedure.split('\n').filter(s => s.trim())
+          const saved = localStorage.getItem(`doc_progress_${item.title}`)
+          if (saved && steps.length) {
+            const { steps: s } = JSON.parse(saved)
+            map[item.title] = s ? s.filter(Boolean).length / steps.length : 0
+          } else {
+            map[item.title] = 0
+          }
+        })
+        setProgressMap(map)
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
+  const handleProgressChange = (title, ratio) => {
+    setProgressMap(prev => ({ ...prev, [title]: ratio }))
+  }
+
+  // combined score: steps ratio (primary) + req ratio (secondary tiebreak)
+  const getScore = (item) => {
+    const saved = localStorage.getItem(`doc_progress_${item.title}`)
+    if (!saved) return progressMap[item.title] ?? 0
+    const { steps: s, reqs: r } = JSON.parse(saved)
+    const stepLen = item.procedure.split('\n').filter(x => x.trim()).length
+    const reqLen = item.requirements.split('\n').filter(x => x.trim()).length
+    const stepRatio = s && stepLen ? s.filter(Boolean).length / stepLen : 0
+    const reqRatio = r && reqLen ? r.filter(Boolean).length / reqLen : 0
+    return stepRatio + reqRatio * 0.01
+  }
+
   const filtered = requirements
     .filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
+      const scoreDiff = getScore(b) - getScore(a)
+      if (scoreDiff !== 0) return scoreDiff
       if (sort === 'newest') return new Date(b.date_posted) - new Date(a.date_posted)
       if (sort === 'oldest') return new Date(a.date_posted) - new Date(b.date_posted)
       if (sort === 'az') return a.title.localeCompare(b.title)
@@ -90,6 +124,7 @@ function Documents() {
                 title={item.title}
                 requirements={item.requirements.split('\n').filter(s => s.trim())}
                 steps={item.procedure.split('\n').filter(s => s.trim())}
+                onProgressChange={handleProgressChange}
               />
             ))}
           </div>

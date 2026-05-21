@@ -329,9 +329,8 @@ function Navbar() {
 
       {/* Fixed Navbar (Slides down when header is passed) */}
       <div 
-        className="fixed top-0 left-0 w-full z-40"
+        className="fixed top-0 left-0 w-full z-40 bg-gray-950"
         style={{
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.22) 35%, rgba(0,0,0,0.06) 55%, rgba(0,0,0,0) 70%)',
           transform: (isFixed && navVisible) ? 'translateY(0)' : 'translateY(-120%)',
           opacity: (isFixed && navVisible) ? 1 : 0,
           pointerEvents: (isFixed && navVisible) ? 'auto' : 'none',
@@ -521,7 +520,7 @@ function NavLogo() {
           style={{
             ...NAV_TEXT_STYLE,
             fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '1.5rem',
+            fontSize:      '1.6rem',
             letterSpacing: '0.08em',
             lineHeight:    1,
           }}
@@ -532,7 +531,7 @@ function NavLogo() {
           style={{
             ...NAV_SUBTEXT_STYLE,
             fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '0.7rem',
+            fontSize:      '0.8rem',
             letterSpacing: '0.05em',
             lineHeight:    1,
             textTransform: 'uppercase',
