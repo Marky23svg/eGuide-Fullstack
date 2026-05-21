@@ -1,4 +1,116 @@
 import { useState } from 'react'
+import { jsPDF } from 'jspdf'
+
+// ── PDF generator ─────────────────────────────────────────────────────────────
+const downloadPDF = (title, requirements, steps) => {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const margin = 20
+  const contentW = pageW - margin * 2
+  let y = 0
+
+  const checkPage = (needed = 10) => {
+    if (y + needed > pageH - margin) {
+      doc.addPage()
+      y = margin
+    }
+  }
+
+  // ── Header bar ──
+  doc.setFillColor(26, 86, 219) // blue-600
+  doc.rect(0, 0, pageW, 28, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(255, 255, 255)
+  doc.text('eGuide ICCT', margin, 12)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Document Procedure Guide', margin, 20)
+
+  // ── Title ──
+  y = 40
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.setTextColor(17, 24, 39)
+  const titleLines = doc.splitTextToSize(title, contentW)
+  doc.text(titleLines, margin, y)
+  y += titleLines.length * 8 + 4
+
+  // ── Divider ──
+  doc.setDrawColor(229, 231, 235)
+  doc.setLineWidth(0.4)
+  doc.line(margin, y, pageW - margin, y)
+  y += 8
+
+  // ── Requirements section ──
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(26, 86, 219)
+  doc.text('WHAT YOU NEED', margin, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(55, 65, 81)
+
+  requirements.forEach((req) => {
+    checkPage(8)
+    const lines = doc.splitTextToSize(`• ${req}`, contentW - 4)
+    doc.text(lines, margin + 2, y)
+    y += lines.length * 6 + 2
+  })
+
+  y += 4
+  checkPage(10)
+
+  // ── Divider ──
+  doc.setDrawColor(229, 231, 235)
+  doc.line(margin, y, pageW - margin, y)
+  y += 8
+
+  // ── Procedure section ──
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(26, 86, 219)
+  doc.text('PROCEDURE', margin, y)
+  y += 7
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(55, 65, 81)
+
+  steps.forEach((step, i) => {
+    checkPage(10)
+    // Step number circle area
+    doc.setFillColor(239, 246, 255)
+    doc.roundedRect(margin, y - 4, 7, 7, 1, 1, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(26, 86, 219)
+    doc.text(String(i + 1), margin + 2.5, y + 0.5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    doc.setTextColor(55, 65, 81)
+    const lines = doc.splitTextToSize(step, contentW - 12)
+    doc.text(lines, margin + 10, y)
+    y += lines.length * 6 + 4
+  })
+
+  // ── Footer on every page ──
+  const totalPages = doc.internal.getNumberOfPages()
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(156, 163, 175)
+    doc.text(`eGuide ICCT  ·  Page ${p} of ${totalPages}`, margin, pageH - 8)
+    doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageW - margin, pageH - 8, { align: 'right' })
+  }
+
+  doc.save(`${title.replace(/[^a-z0-9]/gi, '_')}_procedure.pdf`)
+}
 
 function DocumentCard({ title, requirements, steps, onProgressChange }) {
   const storageKey = `doc_progress_${title}`
@@ -242,15 +354,21 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3">
+              <button
+                onClick={(e) => { e.stopPropagation(); downloadPDF(title, requirements, steps) }}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
+              >
+                ↓ Download PDF
+              </button>
               {allDone ? (
-                <div className="flex items-center justify-center gap-2 py-1">
+                <div className="flex items-center gap-2">
                   <span className="text-green-500 text-lg">🎉</span>
                   <p className="text-sm font-bold text-green-600">All done! You're ready.</p>
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 text-center">
-                  {reqCompletedCount}/{requirements.length} items collected · {completedCount}/{steps.length} steps done
+                <p className="text-xs text-gray-400 text-right">
+                  {reqCompletedCount}/{requirements.length} items · {completedCount}/{steps.length} steps
                 </p>
               )}
             </div>

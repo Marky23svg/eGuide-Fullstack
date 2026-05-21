@@ -270,7 +270,7 @@ const Chatbot = () => {
             {/* Chat card */}
             <div
               style={{ width: '100%', height: CARD_HEIGHT, position: 'relative' }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden"
+              className="bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden"
             >
 
               {/* Header */}

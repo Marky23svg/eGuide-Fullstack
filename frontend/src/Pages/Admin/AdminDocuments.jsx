@@ -350,7 +350,7 @@ function AdminDocuments() {
   const toggleExpand = (id) => setExpandedId(prev => prev === id ? null : id)
 
   return (
-    <AdminLayout activePage="Requirements">
+    <AdminLayout activePage="Documents">
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
