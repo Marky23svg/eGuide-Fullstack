@@ -10,7 +10,7 @@ function Login() {
 
   const [activeTab, setActiveTab] = useState('login')
   const [forgotStep, setForgotStep] = useState('email')
-  const [loginStep, setLoginStep] = useState('credentials')
+  const [signupStep, setSignupStep] = useState('form') // 'form' | 'otp'
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false)
@@ -22,14 +22,13 @@ function Login() {
   // Login form states
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loginOtp, setLoginOtp] = useState('')
 
   // Sign up form states
   const [regName, setRegName] = useState('')
-  const [regStudentNo, setRegStudentNo] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regPassword, setRegPassword] = useState('')
   const [regConfirm, setRegConfirm] = useState('')
+  const [signupOtp, setSignupOtp] = useState('')
 
   // Forgot password states
   const [forgotEmail, setForgotEmail] = useState('')
@@ -42,37 +41,18 @@ function Login() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [signupError, setSignupError] = useState('')
   const [signupSuccess, setSignupSuccess] = useState('')
+  const [signupLoading, setSignupLoading] = useState(false)
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
 
-  // Runs when login form is submitted - CONNECTED TO BACKEND
+  // Login — direct, no OTP
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoginError('')
     setLoginLoading(true)
-
     try {
       const response = await API.post('/auth/login', { email, password })
-
-      if (response.success && response.requiresOtp) {
-        setLoginStep('otp')
-      }
-    } catch (error) {
-      setLoginError(error.response?.data?.message || error.message)
-    } finally {
-      setLoginLoading(false)
-    }
-  }
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault()
-    setLoginError('')
-    setLoginLoading(true)
-
-    try {
-      const response = await API.post('/auth/verify-login-otp', { email, otp: loginOtp })
-
       if (response.success) {
         localStorage.setItem('token', response.token)
         localStorage.setItem('user', JSON.stringify(response.user))
@@ -89,7 +69,7 @@ function Login() {
     }
   }
 
-  // Runs when sign up form is submitted - CONNECTED TO BACKEND
+  // Sign up — Step 1: send OTP to email
   const handleSignUp = async (e) => {
     e.preventDefault()
     setSignupError('')
@@ -100,28 +80,43 @@ function Login() {
       return
     }
 
+    setSignupLoading(true)
     try {
-      const response = await API.post('/auth/signup', {
+      const response = await API.post('/auth/signup/send-otp', {
         name: regName,
         email: regEmail,
         password: regPassword,
-        role: 'student'
       })
-
       if (response.success) {
-        console.log('Signup successful!', response.user)
-        setSignupSuccess('Account created successfully! Please login.')
-
-        setActiveTab('login')
-        setRegName('')
-        setRegStudentNo('')
-        setRegEmail('')
-        setRegPassword('')
-        setRegConfirm('')
+        setSignupSuccess(`OTP sent to ${regEmail}. Check your inbox.`)
+        setSignupStep('otp')
       }
     } catch (error) {
-      console.error('Signup failed:', error.response?.data?.message || error.message)
-      setSignupError('Signup failed: ' + (error.response?.data?.message || 'Email may already exist'))
+      setSignupError(error.message || 'Signup failed. Email may already exist.')
+    } finally {
+      setSignupLoading(false)
+    }
+  }
+
+  // Sign up — Step 2: verify OTP and activate account
+  const handleVerifySignupOtp = async (e) => {
+    e.preventDefault()
+    setSignupError('')
+    setSignupLoading(true)
+    try {
+      const response = await API.post('/auth/signup/verify-otp', {
+        email: regEmail,
+        otp: signupOtp,
+      })
+      if (response.success) {
+        localStorage.setItem('token', response.token)
+        localStorage.setItem('user', JSON.stringify(response.user))
+        navigate('/home')
+      }
+    } catch (error) {
+      setSignupError(error.message || 'Invalid or expired OTP.')
+    } finally {
+      setSignupLoading(false)
     }
   }
 
@@ -189,7 +184,7 @@ function Login() {
   }
 
 return (
-  <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden">
+  <div className="relative min-h-screen flex items-center justify-center w-full overflow-hidden px-4 py-8">
 
     {/* Blurred background image */}
     <div
@@ -198,22 +193,21 @@ return (
     />
 
     {/* WRAPPER: card + robot together */}
-    <div className="relative z-10" style={{ width: '384px' }}>
+    <div className="relative z-10 w-full max-w-sm">
 
       {/* ── ROBOT BODY ── */}
       <motion.img
         src="/robot-body.png"
         alt="Robot"
-        className="absolute"
+        className="absolute hidden sm:block"
         key={activeTab + '-body'}
         style={{
-          width: '160px',
-          top: '-30px',
+          width: '130px',
+          top: '-20px',
           zIndex: 5,
-          // Login = left side, Signup = right side
           ...(activeTab === 'signup'
-            ? { left: '100%', marginLeft: '-50px'}
-            : { right: '100%', marginRight: '-50px', scaleX: -1, transform: 'scaleX(-1)'}
+            ? { left: '100%', marginLeft: '-40px'}
+            : { right: '100%', marginRight: '-40px', scaleX: -1, transform: 'scaleX(-1)'}
           ),
         }}
         initial={{
@@ -236,21 +230,21 @@ return (
       <motion.img
         src="/robot-arm.png"
         alt="Robot Arm"
-        className="absolute"
+        className="absolute hidden sm:block"
         key={activeTab + '-arm'}
         style={{
-          width: '80px',
-          top: '30px',
+          width: '65px',
+          top: '25px',
           zIndex: 20,
           ...(activeTab === 'signup'
-            ? { left: '100%', marginLeft: '-30px'}
-            : { right: '100%', marginRight: '-30px', scaleX: -1, transform: 'scaleX(-1)'}
+            ? { left: '100%', marginLeft: '-25px'}
+            : { right: '100%', marginRight: '-25px', scaleX: -1, transform: 'scaleX(-1)'}
           ),
         }}
       />
 
       {/* Card */}
-      <div className="relative bg-white p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full" style={{ zIndex: 10 }}>
+      <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full overflow-y-auto max-h-[90vh]" style={{ zIndex: 10 }}>
 
         {/* Page title */}
         <h2 className="text-2xl font-bold text-center">eGuide <span className="text-blue-600">ICCT</span></h2>
@@ -260,7 +254,7 @@ return (
         {activeTab !== 'forgot' && (
           <div className="flex gap-2 mb-6">
             <button
-              onClick={() => setActiveTab('login')}
+              onClick={() => { setActiveTab('login'); setSignupStep('form') }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg border-2 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] ${
                 activeTab === 'login'
                   ? 'bg-blue-600 border-blue-600 text-white'
@@ -270,7 +264,7 @@ return (
               Log In
             </button>
             <button
-              onClick={() => setActiveTab('signup')}
+              onClick={() => { setActiveTab('signup'); setSignupStep('form') }}
               className={`flex-1 py-2 text-sm font-semibold rounded-lg border-2 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] ${
                 activeTab === 'signup'
                   ? 'bg-blue-600 border-blue-600 text-white'
@@ -283,7 +277,7 @@ return (
         )}
 
         {/* Login form */}
-        {activeTab === 'login' && loginStep === 'credentials' && (
+        {activeTab === 'login' && (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             {loginError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{loginError}</p>}
             {signupSuccess && <p className="text-xs text-green-500 text-center bg-green-50 border border-green-200 rounded p-2">{signupSuccess}</p>}
@@ -325,49 +319,13 @@ return (
               disabled={loginLoading}
               className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loginLoading ? 'Sending OTP...' : 'Log In'}
+              {loginLoading ? 'Logging in...' : 'Log In'}
             </button>
           </form>
         )}
 
-        {/* OTP verification step */}
-        {activeTab === 'login' && loginStep === 'otp' && (
-          <form onSubmit={handleVerifyOtp} className="flex flex-col gap-4">
-            <div className="text-center mb-2">
-              <p className="font-semibold text-gray-700">Check Your Email</p>
-              <p className="text-xs text-gray-400">We sent a 6-digit OTP to <span className="text-blue-500">{email}</span></p>
-            </div>
-            {loginError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{loginError}</p>}
-            <div>
-              <label className="block text-sm font-medium mb-1">OTP Code</label>
-              <input
-                type="text"
-                value={loginOtp}
-                onChange={(e) => setLoginOtp(e.target.value)}
-                placeholder="Enter 6-digit code"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 tracking-widest text-center"
-                maxLength={6}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loginLoading ? 'Verifying...' : 'Verify OTP'}
-            </button>
-            <p
-              onClick={() => { setLoginStep('credentials'); setLoginOtp(''); setLoginError(''); }}
-              className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
-            >
-              ← Back
-            </p>
-          </form>
-        )}
-
-        {/* Sign Up form */}
-        {activeTab === 'signup' && (
+        {/* Sign Up — Step 1: form */}
+        {activeTab === 'signup' && signupStep === 'form' && (
           <form onSubmit={handleSignUp} className="flex flex-col gap-4">
             {signupError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{signupError}</p>}
             <div>
@@ -426,9 +384,10 @@ return (
             </div>
             <button
               type="submit"
-              className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)]"
+              disabled={signupLoading}
+              className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign Up
+              {signupLoading ? 'Sending OTP...' : 'Sign Up'}
             </button>
             <div className="border-t border-gray-200" />
             <p className="text-xs text-center text-gray-400">
@@ -436,6 +395,43 @@ return (
               <span onClick={() => navigate('/terms')} className="text-blue-500 cursor-pointer hover:underline">Terms of Service</span>{' '}
               and{' '}
               <span onClick={() => navigate('/privacy')} className="text-blue-500 cursor-pointer hover:underline">Privacy Policy</span>
+            </p>
+          </form>
+        )}
+
+        {/* Sign Up — Step 2: OTP verification */}
+        {activeTab === 'signup' && signupStep === 'otp' && (
+          <form onSubmit={handleVerifySignupOtp} className="flex flex-col gap-4">
+            <div className="text-center mb-2">
+              <p className="font-semibold text-gray-700">Verify Your Email</p>
+              <p className="text-xs text-gray-400">We sent a 6-digit code to <span className="text-blue-500">{regEmail}</span></p>
+            </div>
+            {signupError && <p className="text-xs text-red-500 text-center bg-red-50 border border-red-200 rounded p-2">{signupError}</p>}
+            {signupSuccess && <p className="text-xs text-green-500 text-center bg-green-50 border border-green-200 rounded p-2">{signupSuccess}</p>}
+            <div>
+              <label className="block text-sm font-medium mb-1">OTP Code</label>
+              <input
+                type="text"
+                value={signupOtp}
+                onChange={(e) => setSignupOtp(e.target.value)}
+                placeholder="Enter 6-digit code"
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 tracking-widest text-center"
+                maxLength={6}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={signupLoading}
+              className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {signupLoading ? 'Verifying...' : 'Verify & Create Account'}
+            </button>
+            <p
+              onClick={() => { setSignupStep('form'); setSignupOtp(''); setSignupError(''); setSignupSuccess('') }}
+              className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
+            >
+              ← Back
             </p>
           </form>
         )}

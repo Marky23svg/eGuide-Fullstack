@@ -41,6 +41,10 @@ const userSchema = new mongoose.Schema({
     loginOtpExpires: {
         type: Date,
         default: null
+    },
+    pendingSignup: {
+        type: Boolean,
+        default: false
     }
 });
 
