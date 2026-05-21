@@ -240,7 +240,7 @@ return (
         key={activeTab + '-arm'}
         style={{
           width: '80px',
-          top: '60px',
+          top: '30px',
           zIndex: 20,
           ...(activeTab === 'signup'
             ? { left: '100%', marginLeft: '-30px'}
