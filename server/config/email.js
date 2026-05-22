@@ -1,28 +1,5 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { Resend } from 'resend';
-
-// Make sure you have RESEND_API_KEY in your environment variables
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export const sendBulkEmail = async (recipients, subject, htmlContent) => {
-    try {
-        const emailPromises = recipients.map(recipient => 
-            resend.emails.send({
-                from: 'onboarding@resend.dev', // Use your verified domain here later
-                to: recipient.email,
-                subject: subject,
-                html: htmlContent
-            })
-        );
-
-        await Promise.all(emailPromises);
-        return { success: true };
-    } catch (error) {
-        console.error('Resend API Error:', error);
-        return { success: false, error: error.message };
-    }
-};
 
 dotenv.config();
 

@@ -31,10 +31,10 @@ const sendResetCodeEmail = async (email, code) => {
         </div>
     `;
     
-    sendBulkEmail([{ email }], 'Email Verification - eGuide System', `...`)
-        .catch(err => console.error('Failed to send email:', err));
-        
-    res.json({ success: true, message: 'OTP sent to your email' });
+    const result = await sendBulkEmail([{ email }], subject, htmlContent);
+    if (!result.success) {
+        throw new Error('Failed to send email: ' + result.error);
+    }
 };
 
 // Signup — Step 1: Send OTP to email before creating account
