@@ -277,9 +277,13 @@ const Chatbot = () => {
               <div className="p-4 bg-gradient-to-r from-[#1a73e8] to-[#0d47a1] text-white flex items-center justify-between flex-shrink-0 rounded-t-2xl">
                 <div>
                   <div className="text-sm font-bold">eGuide Assistant</div>
-                  <div className="text-[10px] opacity-80 mt-1 flex items-center gap-1">
-                    <FaCircle className="text-green-400 text-[6px]" /> Always Online
-                  </div>
+                  <div className="text-[10px] mt-1 flex items-center gap-1.5">
+  <div className="relative">
+    <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]" />
+    <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75" />
+  </div>
+  <span className="text-green-300 font-medium drop-shadow-[0_0_3px_#22c55e]">Always Online</span>
+</div>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close chat">
                   <CgClose className="text-xl" />
@@ -288,7 +292,7 @@ const Chatbot = () => {
 
               {/* Sub-header */}
               <div className="bg-blue-50 dark:bg-blue-900/20 p-2 text-[11px] text-blue-700 dark:text-blue-300 text-center border-b border-blue-100 dark:border-blue-900/30 flex-shrink-0">
-                Ask about Enrollment, Requirements, or Portal Access.
+                Ask about Document processes, announcements, and more!
               </div>
 
               {/* Messages */}
@@ -320,7 +324,7 @@ const Chatbot = () => {
               </div>
 
               {/* Input */}
-              <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-[#0a0a0a] border-t dark:border-zinc-800 flex-shrink-0 rounded-b-2xl">
+              <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-[#0a0a0a] border-t border-gray-300 dark:border-zinc-800 flex-shrink-0 rounded-b-2xl">
                 <div className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-900 p-2 rounded-xl border border-transparent focus-within:border-blue-500 transition-all">
                   <input
                     type="text"

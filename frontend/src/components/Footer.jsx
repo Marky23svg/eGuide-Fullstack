@@ -61,7 +61,6 @@ const Footer = forwardRef((props, ref) => {
             <div className="flex items-center gap-3">
               {[
                 { icon: facebookIcon, label: 'Facebook', url: 'https://www.facebook.com/IM4ICCT' },
-                { icon: tiktokIcon, label: 'TikTok', url: 'https://www.tiktok.com/discover/icct' },
                 { icon: youtubeIcon, label: 'YouTube', url: 'https://www.youtube.com/@icctcolleges6903' },
               ].map(({ icon, label, url }) => (
                 <a
@@ -102,7 +101,7 @@ const Footer = forwardRef((props, ref) => {
                 { label: 'Address', value: 'ICCT Colleges, Cainta, Rizal, Philippines' },
                 { label: 'Email', value: 'info@icct.edu.ph' },
                 { label: 'Phone', value: '(02) 8123-4567' },
-                { label: 'Office Hours', value: 'Mon - Fri: 8:00 AM - 5:00 PM' },
+                { label: 'Office Hours', value: 'Mon - Sat: 8:00 AM - 5:00 PM' },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-xs text-blue-400/70 uppercase tracking-wider mb-1">{label}</p>
@@ -119,9 +118,7 @@ const Footer = forwardRef((props, ref) => {
           <p className="text-white/20 text-xs">
             © {new Date().getFullYear()} ICCT Colleges. All rights reserved.
           </p>
-          <p className="text-white/20 text-xs">
-            Powered by <span className="text-blue-500">eGuide</span>
-          </p>
+         
         </div>
 
       </div>
