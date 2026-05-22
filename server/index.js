@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 5000;
 
 // *** ADD THIS LINE - Trust proxy for Render ***
 app.set('trust proxy', 1);
+console.log('✅ Trust proxy setting is ENABLED for Render'); // <-- Add this log line
 // ********************************************
 
 // Rate limiters
