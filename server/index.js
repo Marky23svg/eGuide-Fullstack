@@ -57,6 +57,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// ✅ ADD THESE TWO LINES - Body parsers (MUST be before routes)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 // MongoDB Connection
 const connectDB = async () => {
     try {
