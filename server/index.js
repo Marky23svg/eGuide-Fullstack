@@ -12,30 +12,38 @@ import uploadRoutes from './routes/uploadRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ✅ ADD THIS - Trust proxy for Render (MUST BE FIRST)
+app.set('trust proxy', 1);
+console.log('✅ Trust proxy setting is ENABLED for Render');
+
 // Rate limiters
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 200,                  // max 200 requests per IP per window
+    windowMs: 15 * 60 * 1000,
+    max: 200,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many requests, please try again later.' }
 });
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20,                   // max 20 auth attempts per IP per window
+    windowMs: 15 * 60 * 1000,
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many login attempts, please try again later.' }
 });
 
 const publicReadLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,  // 1 minute
-    max: 60,                   // max 60 reads per IP per minute (covers chatbot fetches)
+    windowMs: 1 * 60 * 1000,
+    max: 60,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many requests, please slow down.' }
 });
+
+// ✅ ADD THESE - Body parsers (MUST be before routes)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Middleware
 app.use(cors({
@@ -44,13 +52,13 @@ app.use(cors({
         'http://localhost:4173',
         'http://127.0.0.1:5173',
         'http://127.0.0.1:4173',
-        'https://e-guide-fullstack.vercel.app',  // ← ADD YOUR VERCEL URL
-        'https://eguide-server.onrender.com'      // ← Also allow backend itself
+        'https://e-guide-fullstack.vercel.app',
+        'https://eguide-server.onrender.com'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));                  // Apply global rate limit to all routes
+}));
 
 // MongoDB Connection
 const connectDB = async () => {
