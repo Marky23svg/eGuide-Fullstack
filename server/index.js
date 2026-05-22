@@ -12,6 +12,10 @@ import uploadRoutes from './routes/uploadRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// *** ADD THIS LINE - Trust proxy for Render ***
+app.set('trust proxy', 1);
+// ********************************************
+
 // Rate limiters
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -44,13 +48,13 @@ app.use(cors({
         'http://localhost:4173',
         'http://127.0.0.1:5173',
         'http://127.0.0.1:4173',
-        'https://e-guide-fullstack.vercel.app',  // ← ADD YOUR VERCEL URL
-        'https://eguide-server.onrender.com'      // ← Also allow backend itself
+        'https://e-guide-fullstack.vercel.app',
+        'https://eguide-server.onrender.com'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
-}));                  // Apply global rate limit to all routes
+}));
 
 // MongoDB Connection
 const connectDB = async () => {
