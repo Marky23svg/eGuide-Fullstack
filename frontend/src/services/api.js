@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+    baseURL: import.meta.env.VITE_API_URL || '/api',
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -32,7 +32,9 @@ API.interceptors.response.use(
         if (error.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/';  // ← Redirect to root (login page)
+            if (window.location.pathname !== '/') {
+                window.location.href = '/';
+            }
         }
         
         return Promise.reject(error.response?.data || error);

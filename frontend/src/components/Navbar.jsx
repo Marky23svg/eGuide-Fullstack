@@ -280,16 +280,14 @@ function Navbar() {
   const userEmail = user.email || 'guest@icct.edu.ph'
   const userInitial = (userName.charAt(0) || 'U').toUpperCase()
 
-  const NavContent = () => (
+  const navContent = (
     <nav className="w-full overflow-hidden md:overflow-visible">
-      {/* Top bar */}
       <div className="px-4 sm:px-8 py-3 flex items-center justify-between">
         <NavLogo />
         <div className="hidden md:flex items-center gap-10">
           <NavLinks navigate={navigate} />
           <div className="w-12 h-10 shrink-0" />
         </div>
-        {/* Menu Button - only visible on mobile - triggers the separate menu panel */}
         <button
           className="md:hidden p-2"
           style={{ color: '#fff', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.5))' }}
@@ -324,7 +322,7 @@ function Navbar() {
           pointerEvents: isFixed ? 'none' : 'auto',
         }}
       >
-        <NavContent />
+        {navContent}
       </div>
 
       {/* Fixed Navbar — desktop: hover to show, mobile: always visible */}
@@ -340,12 +338,12 @@ function Navbar() {
         }}
         // desktop only — mobile uses the one below
       >
-        <div className="hidden md:block"><NavContent /></div>
+        <div className="hidden md:block">{navContent}</div>
       </div>
 
       {/* Mobile-only static navbar — always fixed at top */}
       <div className="fixed top-0 left-0 w-full z-40 bg-gray-950 md:hidden">
-        <NavContent />
+        {navContent}
       </div>
 
       {/* Profile card — desktop only */}
@@ -526,7 +524,7 @@ function NavLogo() {
           style={{
             ...NAV_TEXT_STYLE,
             fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '1.6rem',
+            fontSize:      '1.8rem',
             letterSpacing: '0.08em',
             lineHeight:    1,
           }}
@@ -537,7 +535,7 @@ function NavLogo() {
           style={{
             ...NAV_SUBTEXT_STYLE,
             fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '0.8rem',
+            fontSize:      '0.9rem',
             letterSpacing: '0.05em',
             lineHeight:    1,
             textTransform: 'uppercase',
@@ -563,7 +561,7 @@ function NavLinks({ navigate, onNavigate }) {
           onClick={() => { navigate(path); onNavigate?.() }}
           style={{
             ...NAV_TEXT_STYLE,
-            fontSize:      '0.7rem',
+            fontSize:      '0.8rem',
             letterSpacing: '0.2em',
             cursor:        'pointer',
             textTransform: 'uppercase',

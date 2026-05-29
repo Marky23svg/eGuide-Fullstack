@@ -20,7 +20,7 @@ function Homepage() {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
 
   useEffect(() => {
-    API.get('/announcements').then(res => setAnnouncements(res.data)).catch(() => {})
+    API.get('/announcements').then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? [])).catch(() => {})
   }, [])
 
   const heroTitleRef = useRef(null)

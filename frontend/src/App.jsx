@@ -1,5 +1,22 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Component } from 'react'
+
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null } }
+  static getDerivedStateFromError(error) { return { error } }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 40, fontFamily: 'monospace', background: '#fff' }}>
+          <h2 style={{ color: 'red' }}>Runtime Error</h2>
+          <pre style={{ whiteSpace: 'pre-wrap', color: '#333' }}>{this.state.error?.toString()}</pre>
+          <pre style={{ whiteSpace: 'pre-wrap', color: '#666', fontSize: 12 }}>{this.state.error?.stack}</pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 import Login from './Pages/login'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
@@ -53,38 +70,43 @@ function useSessionTimeout() {
 
 function SessionManager({ children }) {
   useSessionTimeout()
-  return children
+  return <>{children}</>
 }
 
 // Simple protected route component
+const getUser = () => {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
+
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/" replace />
+  return token ? <>{children}</> : <Navigate to="/" replace />
 }
 
-// Admin only route
 function AdminRoute({ children }) {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = getUser()
   if (!token) return <Navigate to="/" replace />
   if (user.role !== 'admin') return <Navigate to="/home" replace />
-  return children
+  return <>{children}</>
 }
 
-// Student only route
 function StudentRoute({ children }) {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = getUser()
   if (!token) return <Navigate to="/" replace />
   if (user.role === 'admin') return <Navigate to="/admin" replace />
-  return children
+  return <>{children}</>
 }
 
-// Simple public route component (redirects if already logged in)
 function PublicRoute({ children }) {
   const token = localStorage.getItem('token')
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
-  if (!token) return children
+  const user = getUser()
+  if (!token) return <>{children}</>
   return user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/home" replace />
 }
 
@@ -96,6 +118,7 @@ function ScrollToTop() {
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <SessionManager>
         <ScrollToTop />
@@ -146,6 +169,7 @@ function App() {
       </Routes>
       </SessionManager>
     </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

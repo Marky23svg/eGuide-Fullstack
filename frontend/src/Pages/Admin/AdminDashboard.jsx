@@ -17,9 +17,9 @@ function AdminDashboard() {
           API.get('/users/students'),
         ])
         setCounts({
-          announcements: ann.count,
-          requirements: req.count,
-          students: users.count,
+          announcements: Array.isArray(ann) ? ann.length : (ann.count ?? ann.data?.length ?? '—'),
+          requirements: Array.isArray(req) ? req.length : (req.count ?? req.data?.length ?? '—'),
+          students: Array.isArray(users) ? users.length : (users.count ?? users.data?.length ?? '—'),
         })
       } catch {
         setCounts({ announcements: '—', requirements: '—', students: '—' })

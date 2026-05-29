@@ -1,6 +1,21 @@
 import { useState } from 'react'
 import { jsPDF } from 'jspdf'
 
+const NOTE_STYLES = {
+  strict:   { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-600' },
+  moderate: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600' },
+  normal:   { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-600' },
+  plain:    { bg: '',             border: '',                   text: 'text-gray-600' },
+}
+
+const parseItems = (text) =>
+  text.split('\n').filter(s => s.trim()).map((line, id) => {
+    const m = line.match(/^\[note:(strict|moderate|normal|plain)\] (.*)/)
+    if (m) return { id, text: m[2], type: 'note', severity: m[1] }
+    if (line.startsWith('[note] ')) return { id, text: line.slice(7), type: 'note', severity: 'normal' }
+    return { id, text: line, type: 'item' }
+  })
+
 // ── PDF generator ─────────────────────────────────────────────────────────────
 const downloadPDF = (title, requirements, steps) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
@@ -115,25 +130,30 @@ const downloadPDF = (title, requirements, steps) => {
 function DocumentCard({ title, requirements, steps, onProgressChange }) {
   const storageKey = `doc_progress_${title}`
 
+  const reqItems = parseItems(typeof requirements === 'string' ? requirements : requirements.join('\n'))
+  const stepItems = parseItems(typeof steps === 'string' ? steps : steps.join('\n'))
+  const reqOnly = reqItems.filter(i => i.type === 'item')
+  const stepOnly = stepItems.filter(i => i.type === 'item')
+
   const [open, setOpen] = useState(false)
   const [checked, setChecked] = useState(() => {
     const saved = localStorage.getItem(storageKey)
-    return saved ? JSON.parse(saved).steps : steps.map(() => false)
+    return saved ? JSON.parse(saved).steps : stepOnly.map(() => false)
   })
   const [reqChecked, setReqChecked] = useState(() => {
     const saved = localStorage.getItem(storageKey)
-    return saved ? JSON.parse(saved).reqs : requirements.map(() => false)
+    return saved ? JSON.parse(saved).reqs : reqOnly.map(() => false)
   })
 
   const completedCount = checked.filter(Boolean).length
   const reqCompletedCount = reqChecked.filter(Boolean).length
-  const allDone = reqCompletedCount === requirements.length && completedCount === steps.length
-  const reqPct = requirements.length ? (reqCompletedCount / requirements.length) * 100 : 0
-  const stepPct = steps.length ? (completedCount / steps.length) * 100 : 0
+  const allDone = reqCompletedCount === reqOnly.length && completedCount === stepOnly.length
+  const reqPct = reqOnly.length ? (reqCompletedCount / reqOnly.length) * 100 : 0
+  const stepPct = stepOnly.length ? (completedCount / stepOnly.length) * 100 : 0
 
   const save = (newSteps, newReqs) => {
     localStorage.setItem(storageKey, JSON.stringify({ steps: newSteps, reqs: newReqs }))
-    onProgressChange?.(title, newSteps.filter(Boolean).length / steps.length)
+    onProgressChange?.(title, newSteps.filter(Boolean).length / stepOnly.length)
   }
 
   const toggleStep = (i) => {
@@ -149,8 +169,8 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
   }
 
   const handleRetake = () => {
-    const emptySteps = steps.map(() => false)
-    const emptyReqs = requirements.map(() => false)
+    const emptySteps = stepOnly.map(() => false)
+    const emptyReqs = reqOnly.map(() => false)
     setChecked(emptySteps)
     setReqChecked(emptyReqs)
     localStorage.removeItem(storageKey)
@@ -186,7 +206,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
           <div>
             <div className="flex justify-between text-xs font-medium mb-1">
               <span className={allDone ? 'text-green-600' : 'text-gray-500'}>What you need</span>
-              <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{reqCompletedCount}/{requirements.length}</span>
+              <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{reqCompletedCount}/{reqOnly.length}</span>
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
@@ -200,7 +220,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
           <div>
             <div className="flex justify-between text-xs font-medium mb-1">
               <span className={allDone ? 'text-green-600' : 'text-gray-500'}>Steps</span>
-              <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{completedCount}/{steps.length}</span>
+              <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{completedCount}/{stepOnly.length}</span>
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
@@ -254,7 +274,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
                 <div>
                   <div className="flex justify-between text-xs font-medium mb-1">
                     <span className={allDone ? 'text-green-500' : 'text-gray-500'}>What you need</span>
-                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{reqCompletedCount}/{requirements.length}</span>
+                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{reqCompletedCount}/{reqOnly.length}</span>
                   </div>
                   <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
                     <div
@@ -266,7 +286,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
                 <div>
                   <div className="flex justify-between text-xs font-medium mb-1">
                     <span className={allDone ? 'text-green-500' : 'text-gray-500'}>Steps</span>
-                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{completedCount}/{steps.length}</span>
+                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{completedCount}/{stepOnly.length}</span>
                   </div>
                   <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
                     <div
@@ -285,36 +305,51 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400">What you need</p>
-                  <span className="text-xs text-gray-400 font-medium">{reqCompletedCount}/{requirements.length} collected</span>
+                  <span className="text-xs text-gray-400 font-medium">{reqCompletedCount}/{reqOnly.length} collected</span>
                 </div>
                 <ul className="flex flex-col gap-2">
-                  {requirements.map((req, i) => (
-                    <li
-                      key={i}
-                      className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
-                        reqChecked[i]
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-transparent hover:border-green-100 hover:bg-green-50/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className={`shrink-0 w-2 h-2 rounded-full ${reqChecked[i] ? 'bg-green-400' : 'bg-gray-300'}`} />
-                        <p className={`text-sm leading-relaxed truncate ${reqChecked[i] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                          {req}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => toggleReq(i)}
-                        className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 ${
-                          reqChecked[i]
-                            ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]'
-                            : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'
+                  {reqItems.map((req, i) => {
+                    if (req.type === 'note') {
+                      const ns = NOTE_STYLES[req.severity || 'normal']
+                      const isPlain = req.severity === 'plain'
+                      return (
+                        <li key={i} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                          isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
+                        }`}>
+                          <div className={`shrink-0 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                          <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{req.text}</p>
+                        </li>
+                      )
+                    }
+                    const ri = reqOnly.indexOf(req)
+                    return (
+                      <li
+                        key={i}
+                        className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
+                          reqChecked[ri]
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-gray-50 border-transparent hover:border-green-100 hover:bg-green-50/50'
                         }`}
                       >
-                        {reqChecked[i] ? '✓ Done' : 'Mark Done'}
-                      </button>
-                    </li>
-                  ))}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`shrink-0 w-2 h-2 rounded-full ${reqChecked[ri] ? 'bg-green-400' : 'bg-gray-300'}`} />
+                          <p className={`text-sm leading-relaxed ${reqChecked[ri] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
+                            {req.text}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => toggleReq(ri)}
+                          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 ${
+                            reqChecked[ri]
+                              ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]'
+                              : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'
+                          }`}
+                        >
+                          {reqChecked[ri] ? '✓ Done' : 'Mark Done'}
+                        </button>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
 
@@ -324,31 +359,46 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Procedure</p>
                 <ol className="flex flex-col gap-2">
-                  {steps.map((step, i) => (
-                    <li
-                      key={i}
-                      className={`flex items-start gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
-                        checked[i]
-                          ? 'bg-blue-50 border-blue-200'
-                          : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'
-                      }`}
-                      onClick={() => toggleStep(i)}
-                    >
-                      <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-                        checked[i] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-200 bg-white'
-                      }`}>
-                        {checked[i] && <span className="text-white text-xs font-black">✓</span>}
-                      </div>
-                      <div className="flex items-start gap-2 flex-1">
-                        <span className={`shrink-0 text-xs font-black ${checked[i] ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {i + 1}.
-                        </span>
-                        <p className={`text-sm leading-relaxed ${checked[i] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                          {step}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
+                  {stepItems.map((step, i) => {
+                    if (step.type === 'note') {
+                      const ns = NOTE_STYLES[step.severity || 'normal']
+                      const isPlain = step.severity === 'plain'
+                      return (
+                        <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
+                          isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
+                        }`}>
+                          <div className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                          <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{step.text}</p>
+                        </li>
+                      )
+                    }
+                    const si = stepOnly.indexOf(step)
+                    return (
+                      <li
+                        key={i}
+                        className={`flex items-start gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                          checked[si]
+                            ? 'bg-blue-50 border-blue-200'
+                            : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'
+                        }`}
+                        onClick={() => toggleStep(si)}
+                      >
+                        <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+                          checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-200 bg-white'
+                        }`}>
+                          {checked[si] && <span className="text-white text-xs font-black">✓</span>}
+                        </div>
+                        <div className="flex items-start gap-2 flex-1">
+                          <span className={`shrink-0 text-xs font-black ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>
+                            {si + 1}.
+                          </span>
+                          <p className={`text-sm leading-relaxed ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
+                            {step.text}
+                          </p>
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ol>
               </div>
             </div>
@@ -368,7 +418,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
                 </div>
               ) : (
                 <p className="text-xs text-gray-400 text-right">
-                  {reqCompletedCount}/{requirements.length} items · {completedCount}/{steps.length} steps
+                  {reqCompletedCount}/{reqOnly.length} items · {completedCount}/{stepOnly.length} steps
                 </p>
               )}
             </div>
