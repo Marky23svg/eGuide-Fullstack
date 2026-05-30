@@ -1,6 +1,8 @@
 import express from 'express';
 import Requirement from '../models/requirement.js';
 import { protect, adminOnly } from '../middleware/auth.js';
+import { getCachedValue, setCachedValue, clearCachePrefix } from '../utils/cache.js';
+import { invalidateChatbotCache } from '../utils/chatbotRag.js';
 
 const router = express.Router();
 
@@ -9,13 +11,37 @@ const router = express.Router();
 // Get all requirements
 router.get('/', async (req, res) => {
     try {
-        const requirements = await Requirement.find().sort({ date_posted: -1 });
-        
-        res.json({
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100);
+        const offset = (page - 1) * limit;
+        const cacheKey = `requirements:page=${page}:limit=${limit}`;
+        const cached = getCachedValue(cacheKey);
+
+        if (cached) {
+            return res.json(cached);
+        }
+
+        const [requirements, total] = await Promise.all([
+            Requirement.find()
+                .sort({ date_posted: -1 })
+                .skip(offset)
+                .limit(limit)
+                .select('title requirements procedure date_posted'),
+            Requirement.countDocuments(),
+        ]);
+
+        const response = {
             success: true,
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
             count: requirements.length,
-            data: requirements
-        });
+            data: requirements,
+        };
+
+        setCachedValue(cacheKey, response);
+        res.json(response);
     } catch (error) {
         res.status(500).json({ 
             success: false, 
@@ -68,6 +94,8 @@ router.post('/', protect, adminOnly, async (req, res) => {
             requirements,
             procedure
         });
+        clearCachePrefix('requirements');
+        invalidateChatbotCache();
         
         res.status(201).json({
             success: true,
@@ -101,6 +129,8 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
         requirement.procedure = procedure || requirement.procedure;
         
         await requirement.save();
+        clearCachePrefix('requirements');
+        invalidateChatbotCache();
         
         res.json({
             success: true,
@@ -128,6 +158,8 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
         }
         
         await requirement.deleteOne();
+        clearCachePrefix('requirements');
+        invalidateChatbotCache();
         
         res.json({
             success: true,

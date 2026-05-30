@@ -17,5 +17,8 @@ const announcementSchema = new mongoose.Schema({
     date_posted: { type: Date, default: Date.now }
 });
 
+announcementSchema.index({ title: 'text', content: 'text', description: 'text', fullDetails: 'text', category: 'text', requirements: 'text' });
+announcementSchema.index({ date_posted: -1 });
+
 const Announcement = mongoose.model('Announcement', announcementSchema);
 export default Announcement;

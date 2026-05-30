@@ -2,9 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import authRoutes from './routes/authRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import saveRoutes from './routes/saveRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
@@ -60,6 +62,8 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.use(compression());
+
 // MongoDB Connection
 const connectDB = async () => {
     try {
@@ -90,6 +94,9 @@ app.use('/api/requirements', publicReadLimiter, requirementRoutes);
 
 // Announcement routes (public read limiter)
 app.use('/api/announcements', publicReadLimiter, announcementRoutes);
+
+// Chatbot RAG route
+app.use('/api/chatbot', publicReadLimiter, chatbotRoutes);
 
 // User routes
 app.use('/api/users', userRoutes);

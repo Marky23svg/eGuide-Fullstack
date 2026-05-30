@@ -45,6 +45,11 @@ export const auth = {
     signup: (data) => API.post('/auth/signup', data),
 };
 
+// Chatbot endpoints
+export const chatbot = {
+    ask: (question) => API.post('/chatbot/query', { question }),
+};
+
 // Requirements endpoints
 export const requirements = {
     getAll: () => API.get('/requirements'),

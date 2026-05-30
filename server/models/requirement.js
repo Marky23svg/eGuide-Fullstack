@@ -20,5 +20,8 @@ const requirementSchema = new mongoose.Schema({
     }
 });
 
+requirementSchema.index({ title: 'text', requirements: 'text', procedure: 'text' });
+requirementSchema.index({ date_posted: -1 });
+
 const Requirement = mongoose.model('Requirement', requirementSchema);
 export default Requirement;
