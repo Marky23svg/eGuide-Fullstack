@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 const API = axios.create({
-    baseURL: API_BASE_URL, //import.meta.env.VITE_API_URL || 
+    baseURL: API_BASE_URL,
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
@@ -27,16 +27,16 @@ API.interceptors.response.use(
     (response) => response.data,
     (error) => {
         // Check if this is a login or signup request
-        const isAuthRequest = error.config?.url?.includes('/auth/login') || 
+        const isAuthRequest = error.config?.url?.includes('/auth/login') ||
                               error.config?.url?.includes('/auth/signup');
-        
+
         // Only redirect for 401 errors on NON-auth endpoints
         if (error.response?.status === 401 && !isAuthRequest) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/';  // ← Redirect to root (login page)
         }
-        
+
         return Promise.reject(error.response?.data || error);
     }
 );
@@ -45,6 +45,11 @@ API.interceptors.response.use(
 export const auth = {
     login: (email, password) => API.post('/auth/login', { email, password }),
     signup: (data) => API.post('/auth/signup', data),
+};
+
+// Chatbot endpoints
+export const chatbot = {
+    ask: (question) => API.post('/chatbot/query', { question }),
 };
 
 // Requirements endpoints
@@ -76,10 +81,10 @@ export const saved = {
 export default API;
 
 export const uploadImage = async (file) => {
-    const formData = new FormData()
-    formData.append('image', file)
+    const formData = new FormData();
+    formData.append('image', file);
     const res = await API.post('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    return res.url
-}
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.url;
+};

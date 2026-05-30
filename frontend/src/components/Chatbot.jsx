@@ -2,123 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { CgClose } from 'react-icons/cg';
-import { FaCircle } from 'react-icons/fa';
-import { requirements as requirementsApi, announcements as announcementsApi } from '../services/api';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const formatDocSummary = (doc) => {
-  const reqs = Array.isArray(doc.requirements)
-    ? doc.requirements.map((r) => `- ${r}`).join('\n')
-    : doc.requirements;
-  const steps = Array.isArray(doc.procedure)
-    ? doc.procedure.map((s, i) => `${i + 1}. ${s}`).join('\n')
-    : doc.procedure;
-  return `Here is the ${doc.title} information:\n\nRequirements:\n${reqs}\n\nProcedure:\n${steps}`;
-};
-
-const STOP_WORDS = new Set([
-  'of', 'the', 'a', 'an', 'to', 'for', 'and', 'or', 'in', 'on',
-  'at', 'how', 'get', 'i', 'my', 'is', 'what', 'do', 'can', 'need',
-]);
-
-const detectDoc = (text, docs) => {
-  const inputWords = text.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
-  if (inputWords.length === 0) return null;
-  let bestMatch = null;
-  let bestScore = 0;
-  for (const doc of docs) {
-    const titleWords = doc.title.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
-    const matches = titleWords.filter((word) =>
-      inputWords.some((iw) => iw.includes(word) || word.includes(iw))
-    );
-    const score = matches.length / titleWords.length;
-    if (score > bestScore && score >= 0.5) {
-      bestScore = score;
-      bestMatch = doc;
-    }
-  }
-  return bestMatch;
-};
-
-// Format a date string from either the custom `date` field or `date_posted`
-const formatDate = (date, date_posted) => {
-  if (date && date.trim()) return date.trim();
-  if (date_posted) return new Date(date_posted).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  return null;
-};
-
-// Find a specific announcement by title keyword match
-const detectAnnouncement = (text, announcements) => {
-  const inputWords = text.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
-  if (inputWords.length === 0) return null;
-  let bestMatch = null;
-  let bestScore = 0;
-  for (const ann of announcements) {
-    const titleWords = ann.title.toLowerCase().split(/\s+/).filter((w) => !STOP_WORDS.has(w));
-    const matches = titleWords.filter((word) =>
-      inputWords.some((iw) => iw.includes(word) || word.includes(iw))
-    );
-    const score = matches.length / titleWords.length;
-    if (score > bestScore && score >= 0.5) {
-      bestScore = score;
-      bestMatch = ann;
-    }
-  }
-  return bestMatch;
-};
-
-// Format full announcement detail for chatbot response
-const formatAnnouncementDetail = (ann) => {
-  const dateStr = formatDate(ann.date, ann.date_posted);
-  const lines = [`📢 ${ann.title}`];
-  if (dateStr) lines.push(`📅 Date: ${dateStr}`);
-  if (ann.category) lines.push(`🏷️ Category: ${ann.category}`);
-  const body = ann.description || ann.content || '';
-  if (body) lines.push(`\n${body}`);
-  return lines.join('\n');
-};
-
-const getBotResponse = (text, docs, announcements) => {
-  const lower = text.toLowerCase();
-
-  if (/\b(hi|hello|hey)\b/.test(lower)) {
-    return 'Hi there! Ask me about enrollment, documents, requirements, or the latest announcements.';
-  }
-
-  // Check for specific announcement title match first
-  const matchedAnn = detectAnnouncement(text, announcements);
-  if (matchedAnn && (
-    lower.includes('when') || lower.includes('date') || lower.includes('about') ||
-    lower.includes('what') || lower.includes('tell') || lower.includes('details') ||
-    matchedAnn.title.toLowerCase().split(/\s+/).filter(w => !STOP_WORDS.has(w))
-      .some(w => lower.includes(w))
-  )) {
-    return formatAnnouncementDetail(matchedAnn);
-  }
-
-  if (lower.includes('announcement') || lower.includes('news') || lower.includes('update') || lower.includes('notice') || lower.includes('latest') || lower.includes('recent')) {
-    if (announcements.length === 0) return 'There are no announcements at the moment. Check back later.';
-    const list = announcements.slice(0, 5).map((a, i) => {
-      const dateStr = formatDate(a.date, a.date_posted);
-      return `${i + 1}. ${a.title}${dateStr ? `\n   📅 ${dateStr}` : ''}`;
-    }).join('\n');
-    return `Here are the latest announcements:\n\n${list}\n\nAsk me about any specific one for full details.`;
-  }
-
-  if (lower.includes('what documents') || lower.includes('list of requirements') || lower.includes('available requirements')) {
-    if (docs.length === 0) return 'No requirements are available right now.';
-    const list = docs.map((d, i) => `${i + 1}. ${d.title}`).join('\n');
-    return `Here are the available documents/requirements:\n\n${list}\n\nAsk me about any specific one for details.`;
-  }
-  const doc = detectDoc(text, docs);
-  if (doc) return formatDocSummary(doc);
-  if (lower.includes('login') || lower.includes('portal') || lower.includes('access')) {
-    return 'Use your student credentials to log in. If you forgot your password, use the "Forgot Password" option on the login page.';
-  }
-  const docNames = docs.map((d) => d.title).join(', ');
-  return `I can help with requirements and announcements. Available documents: ${docNames || 'none yet'}. Ask me about any of them.`;
-};
+import { chatbot as chatbotApi } from '../services/api';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -133,48 +17,38 @@ const Chatbot = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [docs, setDocs] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-  const [dataLoaded, setDataLoaded] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
   const scrollRef = useRef(null);
-
-  useEffect(() => {
-    if (isOpen && !dataLoaded) {
-      Promise.all([
-        requirementsApi.getAll().catch(() => ({ data: [] })),
-        announcementsApi.getAll().catch(() => ({ data: [] })),
-      ]).then(([reqRes, annRes]) => {
-        setDocs((reqRes.data || []).map(({ title, requirements, procedure }) => ({ title, requirements, procedure })));
-        setAnnouncements((annRes.data || []).map(({ title, date, date_posted, content, description, category }) => ({
-          title, date, date_posted, content, description, category,
-        })));
-        setDataLoaded(true);
-      });
-    }
-  }, [isOpen, dataLoaded]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     const trimmed = input.trim().replace(/<[^>]*>/g, '').slice(0, 300);
+
     if (!trimmed) return;
+
     if (messageCount >= MESSAGE_LIMIT) {
       setMessages((prev) => [...prev, { text: 'You have reached the message limit for this session. Please refresh to continue.', sender: 'bot' }]);
       setInput('');
       return;
     }
+
     setMessages((prev) => [...prev, { text: trimmed, sender: 'user' }]);
     setMessageCount((c) => c + 1);
     setInput('');
     setIsLoading(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { text: getBotResponse(trimmed, docs, announcements), sender: 'bot' }]);
+
+    try {
+      const response = await chatbotApi.ask(trimmed);
+      setMessages((prev) => [...prev, { text: response.answer || 'I could not find a useful answer for that query.', sender: 'bot' }]);
+    } catch (error) {
+      setMessages((prev) => [...prev, { text: 'I am having trouble reaching the knowledge base right now. Please try again in a moment.', sender: 'bot' }]);
+    } finally {
       setIsLoading(false);
-    }, 250);
+    }
   };
 
   return (
@@ -278,12 +152,12 @@ const Chatbot = () => {
                 <div>
                   <div className="text-sm font-bold">eGuide Assistant</div>
                   <div className="text-[10px] mt-1 flex items-center gap-1.5">
-  <div className="relative">
-    <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]" />
-    <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75" />
-  </div>
-  <span className="text-green-300 font-medium drop-shadow-[0_0_3px_#22c55e]">Always Online</span>
-</div>
+                    <div className="relative">
+                      <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e]" />
+                      <div className="absolute inset-0 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75" />
+                    </div>
+                    <span className="text-green-300 font-medium drop-shadow-[0_0_3px_#22c55e]">Always Online</span>
+                  </div>
                 </div>
                 <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close chat">
                   <CgClose className="text-xl" />
@@ -297,7 +171,6 @@ const Chatbot = () => {
 
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#f8f9fa] dark:bg-[#0a0a0a]">
-                {!dataLoaded && <div className="text-center text-xs text-gray-400 italic">Loading latest data...</div>}
                 {messages.map((msg, index) => (
                   <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div

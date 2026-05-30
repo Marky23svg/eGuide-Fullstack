@@ -2,9 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
+import compression from 'compression';
 import authRoutes from './routes/authRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import saveRoutes from './routes/saveRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
@@ -12,7 +14,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ ADD THIS - Trust proxy for Render (MUST BE FIRST)
+// ✅ Trust proxy for Render (MUST BE FIRST)
 app.set('trust proxy', 1);
 console.log('✅ Trust proxy setting is ENABLED for Render');
 
@@ -41,7 +43,7 @@ const publicReadLimiter = rateLimit({
     message: { success: false, message: 'Too many requests, please slow down.' }
 });
 
-// ✅ ADD THESE - Body parsers (MUST be before routes)
+// Body parsers (MUST be before routes)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -53,12 +55,16 @@ app.use(cors({
         'http://127.0.0.1:5173',
         'http://127.0.0.1:4173',
         'https://e-guide-fullstack.vercel.app',
-        'https://eguide-server.onrender.com'
+        'https://eguide-server.onrender.com',
+        'https://eguide-deployment.onrender.com',
+        'https://eguide-deployment.vercel.app'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.use(compression());
 
 // MongoDB Connection
 const connectDB = async () => {
@@ -91,6 +97,9 @@ app.use('/api/requirements', publicReadLimiter, requirementRoutes);
 // Announcement routes (public read limiter)
 app.use('/api/announcements', publicReadLimiter, announcementRoutes);
 
+// Chatbot RAG route
+app.use('/api/chatbot', publicReadLimiter, chatbotRoutes);
+
 // User routes
 app.use('/api/users', userRoutes);
 
@@ -101,6 +110,6 @@ app.use('/api/saved', saveRoutes);
 app.use('/api/upload', uploadRoutes);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
