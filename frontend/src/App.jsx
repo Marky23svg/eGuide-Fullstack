@@ -10,25 +10,30 @@ import NotFound from './Pages/NotFound'
 import AdminDashboard from './Pages/Admin/AdminDashboard'
 import AdminAnnouncements from './Pages/Admin/AdminAnnouncements'
 import AdminDocuments from './Pages/Admin/AdminDocuments'
+import SessionExpiredModal from './components/SessionExpiredModal'
 
-// Session timeout in milliseconds (30 minutes)
+// Session timeout: 30 minutes of inactivity
 const SESSION_TIMEOUT = 30 * 60 * 1000
 
-// Session timeout hook
 function useSessionTimeout() {
   const navigate = useNavigate()
   const [lastActivity, setLastActivity] = useState(Date.now())
+  const [sessionExpired, setSessionExpired] = useState(false)
 
   const logout = useCallback(() => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    navigate('/', { replace: true })
-    alert('Your session has expired due to inactivity. Please log in again.')
-  }, [navigate])
+    setSessionExpired(true)
+  }, [])
 
   const resetTimer = useCallback(() => {
     setLastActivity(Date.now())
   }, [])
+
+  const handleDismiss = useCallback(() => {
+    setSessionExpired(false)
+    navigate('/', { replace: true })
+  }, [navigate])
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -38,28 +43,28 @@ function useSessionTimeout() {
     events.forEach(event => window.addEventListener(event, resetTimer))
 
     const interval = setInterval(() => {
-      const now = Date.now()
-      if (now - lastActivity > SESSION_TIMEOUT) {
+      if (Date.now() - lastActivity > SESSION_TIMEOUT) {
         logout()
       }
-    }, 60000) // Check every minute
+    }, 60000)
 
     return () => {
       events.forEach(event => window.removeEventListener(event, resetTimer))
       clearInterval(interval)
     }
   }, [lastActivity, logout, resetTimer])
+
+  return { sessionExpired, handleDismiss }
 }
 
 function SessionManager({ children }) {
-  useSessionTimeout()
-  return children
-}
-
-// Simple protected route component
-function PrivateRoute({ children }) {
-  const token = localStorage.getItem('token')
-  return token ? children : <Navigate to="/" replace />
+  const { sessionExpired, handleDismiss } = useSessionTimeout()
+  return (
+    <>
+      {children}
+      {sessionExpired && <SessionExpiredModal onDismiss={handleDismiss} />}
+    </>
+  )
 }
 
 // Admin only route
@@ -80,7 +85,7 @@ function StudentRoute({ children }) {
   return children
 }
 
-// Simple public route component (redirects if already logged in)
+// Public route — redirects already-logged-in users to their dashboard
 function PublicRoute({ children }) {
   const token = localStorage.getItem('token')
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -100,50 +105,23 @@ function App() {
       <SessionManager>
         <ScrollToTop />
         <Routes>
-        {/* Public routes - redirect to home if already logged in */}
-        <Route path="/" element={
-          <PublicRoute>
-            <Login />
-          </PublicRoute>
-        } />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        
-        {/* Protected routes - require login */}
-        <Route path="/home" element={
-          <StudentRoute>
-            <Homepage />
-          </StudentRoute>
-        } />
-        <Route path="/requirements" element={
-          <StudentRoute>
-            <Documents />
-          </StudentRoute>
-        } />
-        <Route path="/announcements" element={
-          <StudentRoute>
-            <Announcements />
-          </StudentRoute>
-        } />
-        
-        {/* Admin routes - admin only */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } />
-        <Route path="/admin/announcements" element={
-          <AdminRoute>
-            <AdminAnnouncements />
-          </AdminRoute>
-        } />
-        <Route path="/admin/requirements" element={
-          <AdminRoute>
-            <AdminDocuments />
-          </AdminRoute>
-        } />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* Public */}
+          <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
+          <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+
+          {/* Student */}
+          <Route path="/home" element={<StudentRoute><Homepage /></StudentRoute>} />
+          <Route path="/requirements" element={<StudentRoute><Documents /></StudentRoute>} />
+          <Route path="/announcements" element={<StudentRoute><Announcements /></StudentRoute>} />
+
+          {/* Admin */}
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
+          <Route path="/admin/requirements" element={<AdminRoute><AdminDocuments /></AdminRoute>} />
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </SessionManager>
     </BrowserRouter>
   )

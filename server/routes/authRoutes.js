@@ -2,64 +2,66 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
+import { config } from '../config/config.js';
+import { enqueueEmail } from '../utils/emailQueue.js';
 
 const router = express.Router();
 
-// Generate random 6-digit code
-const generateResetCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-};
+const MIN_PASSWORD_LENGTH = 8;
 
-// Send reset code email
-const sendResetCodeEmail = async (email, code) => {
-    const { sendBulkEmail } = await import('../config/email.js');
-    
-    const subject = 'Password Reset Code - eGuide System';
-    const htmlContent = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-            <div style="background-color: #2563eb; padding: 10px; text-align: center; border-radius: 5px 5px 0 0;">
-                <h2 style="color: white; margin: 0;">eGuide System</h2>
-            </div>
-            <div style="padding: 20px;">
-                <h3 style="color: #333;">Password Reset Code</h3>
-                <p style="color: #666;">Use the code below to reset your password. It expires in <strong>10 minutes</strong>.</p>
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
-                    <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${code}</span>
-                </div>
-                <p style="color: #999; font-size: 12px;">If you didn't request this, please ignore this email.</p>
-            </div>
-        </div>
-    `;
-    
-    const result = await sendBulkEmail([{ email }], subject, htmlContent);
-    if (!result.success) {
-        throw new Error('Failed to send email: ' + result.error);
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+const validatePassword = (password) => {
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+        return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
     }
+    return null;
 };
 
-// Signup — Step 1: Send OTP to email before creating account
+const signToken = (user) =>
+    jwt.sign({ id: user._id, role: user.role }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
+
+const otpEmailHtml = (code, title, bodyText) => `
+    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:10px;">
+        <div style="background-color:#2563eb;padding:10px;text-align:center;border-radius:5px 5px 0 0;">
+            <h2 style="color:white;margin:0;">eGuide System</h2>
+        </div>
+        <div style="padding:20px;">
+            <h3 style="color:#333;">${title}</h3>
+            <p style="color:#666;">${bodyText}</p>
+            <div style="background-color:#f3f4f6;padding:20px;border-radius:5px;text-align:center;margin:20px 0;">
+                <span style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#2563eb;">${code}</span>
+            </div>
+            <p style="color:#999;font-size:12px;">If you didn't request this, please ignore this email.</p>
+        </div>
+    </div>
+`;
+
+// ── Signup ────────────────────────────────────────────────────────────────────
+
+// Step 1: validate + create pending user + queue OTP email
 router.post('/signup/send-otp', async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
         if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: 'Please provide name, email, and password' });
+            return res.status(400).json({ success: false, message: 'Please provide name, email, and password.' });
         }
 
-        const existingUser = await User.findOne({ email });
+        const pwError = validatePassword(password);
+        if (pwError) return res.status(400).json({ success: false, message: pwError });
+
+        const existingUser = await User.findOne({ email, pendingSignup: { $ne: true } });
         if (existingUser) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
+            return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
         }
 
-        const otp = generateResetCode();
-        const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        // Clean up any stale pending record for this email
+        await User.findOneAndDelete({ email, pendingSignup: true });
 
-        // Store pending signup data temporarily on a temp user doc (or use in-memory via a signed token)
-        // We'll store it as a pending field on a placeholder — simplest: store in a temp collection via the User model with a pending flag
-        // Instead, we encode the data in a short-lived way by storing OTP in a temp record
-        // Use the User model with a `pendingSignup` flag so we don't create the real account yet
-        await User.findOneAndDelete({ email, pendingSignup: true }); // clean up any old pending
-
+        const otp = generateCode();
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await User.create({
@@ -69,33 +71,23 @@ router.post('/signup/send-otp', async (req, res) => {
             role: 'student',
             pendingSignup: true,
             loginOtp: otp,
-            loginOtpExpires: otpExpires,
+            loginOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
         });
 
-        const { sendBulkEmail } = await import('../config/email.js');
-        await sendBulkEmail([{ email }], 'Email Verification - eGuide System', `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-                <div style="background-color: #2563eb; padding: 10px; text-align: center; border-radius: 5px 5px 0 0;">
-                    <h2 style="color: white; margin: 0;">eGuide System</h2>
-                </div>
-                <div style="padding: 20px;">
-                    <h3 style="color: #333;">Verify Your Email</h3>
-                    <p style="color: #666;">Use this code to complete your registration. It expires in <strong>10 minutes</strong>.</p>
-                    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 5px; text-align: center; margin: 20px 0;">
-                        <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #2563eb;">${otp}</span>
-                    </div>
-                    <p style="color: #999; font-size: 12px;">If you didn't request this, please ignore this email.</p>
-                </div>
-            </div>
-        `);
+        // Non-blocking — respond immediately, email sends in background
+        enqueueEmail(
+            [{ email }],
+            'Email Verification - eGuide System',
+            otpEmailHtml(otp, 'Verify Your Email', 'Use this code to complete your registration. It expires in <strong>10 minutes</strong>.')
+        );
 
-        res.json({ success: true, message: 'OTP sent to your email' });
+        res.json({ success: true, message: 'OTP sent to your email.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Signup — Step 2: Verify OTP and activate account
+// Step 2: verify OTP and activate account
 router.post('/signup/verify-otp', async (req, res) => {
     try {
         const { email, otp } = req.body;
@@ -104,190 +96,161 @@ router.post('/signup/verify-otp', async (req, res) => {
             email,
             pendingSignup: true,
             loginOtp: otp,
-            loginOtpExpires: { $gt: new Date() }
+            loginOtpExpires: { $gt: new Date() },
         });
 
         if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid or expired OTP' });
+            return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
         }
 
-        // Activate the account
         user.pendingSignup = false;
         user.loginOtp = null;
         user.loginOtpExpires = null;
         await user.save();
 
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        const token = signToken(user);
 
         res.status(201).json({
             success: true,
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Signup — legacy direct (kept for admin creation via Postman)
+// Legacy direct signup (admin creation via Postman only)
 router.post('/signup', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
+        const pwError = validatePassword(password);
+        if (pwError) return res.status(400).json({ success: false, message: pwError });
+
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
+            return res.status(400).json({ success: false, message: 'User already exists.' });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: role || 'student'
-        });
-
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        const user = await User.create({ name, email, password: hashedPassword, role: role || 'student' });
+        const token = signToken(user);
 
         res.status(201).json({
             success: true,
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Login — direct token response, no OTP
+// ── Login ─────────────────────────────────────────────────────────────────────
+
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
 
         const user = await User.findOne({ email, pendingSignup: { $ne: true } });
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials.' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ success: false, message: 'Invalid credentials.' });
         }
 
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        const token = signToken(user);
 
         res.json({
             success: true,
             token,
-            user: { id: user._id, name: user.name, email: user.email, role: user.role }
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
         });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// ========== FORGOT PASSWORD ROUTES ==========
+// ── Forgot Password ───────────────────────────────────────────────────────────
 
-// Step 1: Request password reset
+// Step 1: generate + queue reset code email
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        
-        const user = await User.findOne({ email });
+
+        const user = await User.findOne({ email, pendingSignup: { $ne: true } });
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'No account found with this email' 
-            });
+            // Return success anyway to avoid email enumeration
+            return res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
         }
-        
-        const resetCode = generateResetCode();
-        
+
+        const resetCode = generateCode();
         user.resetCode = resetCode;
         user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
         await user.save();
-        
-        await sendResetCodeEmail(email, resetCode);
-        console.log('✅ Reset code email sent to:', email);
-        
-        res.json({ 
-            success: true, 
-            message: 'Reset code sent to your email' 
-        });
+
+        // Non-blocking — respond immediately
+        enqueueEmail(
+            [{ email }],
+            'Password Reset Code - eGuide System',
+            otpEmailHtml(resetCode, 'Password Reset Code', 'Use the code below to reset your password. It expires in <strong>10 minutes</strong>.')
+        );
+
+        res.json({ success: true, message: 'Reset code sent to your email.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Step 2: Verify reset code
+// Step 2: verify reset code
 router.post('/verify-reset-code', async (req, res) => {
     try {
         const { email, code } = req.body;
-        
-        const user = await User.findOne({ 
-            email, 
+
+        const user = await User.findOne({
+            email,
             resetCode: code,
-            resetCodeExpires: { $gt: new Date() }
+            resetCodeExpires: { $gt: new Date() },
         });
-        
+
         if (!user) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid or expired reset code' 
-            });
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset code.' });
         }
-        
-        res.json({ 
-            success: true, 
-            message: 'Code verified successfully' 
-        });
+
+        res.json({ success: true, message: 'Code verified successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Step 3: Reset password
+// Step 3: reset password
 router.post('/reset-password', async (req, res) => {
     try {
         const { email, code, newPassword } = req.body;
-        
-        const user = await User.findOne({ 
-            email, 
+
+        const pwError = validatePassword(newPassword);
+        if (pwError) return res.status(400).json({ success: false, message: pwError });
+
+        const user = await User.findOne({
+            email,
             resetCode: code,
-            resetCodeExpires: { $gt: new Date() }
+            resetCodeExpires: { $gt: new Date() },
         });
-        
+
         if (!user) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid or expired reset code' 
-            });
+            return res.status(400).json({ success: false, message: 'Invalid or expired reset code.' });
         }
-        
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        user.password = hashedPassword;
+
+        user.password = await bcrypt.hash(newPassword, 10);
         user.resetCode = null;
         user.resetCodeExpires = null;
         await user.save();
-        
-        res.json({ 
-            success: true, 
-            message: 'Password reset successfully' 
-        });
+
+        res.json({ success: true, message: 'Password reset successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }

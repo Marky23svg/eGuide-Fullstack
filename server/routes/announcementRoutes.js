@@ -2,7 +2,7 @@ import express from 'express';
 import Announcement from '../models/announcement.js';
 import User from '../models/user.js';
 import { protect, adminOnly } from '../middleware/auth.js';
-import { sendAnnouncementEmail } from '../config/email.js';
+import { enqueueAnnouncementEmail } from '../utils/emailQueue.js';
 import { getCachedValue, setCachedValue, clearCachePrefix } from '../utils/cache.js';
 import { invalidateChatbotCache } from '../utils/chatbotRag.js';
 
@@ -77,13 +77,12 @@ router.post('/', protect, adminOnly, async (req, res) => {
         clearCachePrefix('announcements');
         invalidateChatbotCache();
 
-        // Send emails in background - don't await so response is immediate
+        // Fire-and-forget via queue — response is immediate, email sends in background
         if (students.length > 0) {
-            sendAnnouncementEmail(students, announcement)
-                .then(result => console.log(result.success ? `✅ Emails sent to ${students.length} students` : `❌ Email error: ${result.error}`))
-                .catch(err => console.error('❌ Email send error:', err.message));
+            enqueueAnnouncementEmail(students, announcement);
+            console.log(`📧 [EmailQueue] Queued announcement email for ${students.length} student(s)`);
         } else {
-            console.log('📭 No students found to send emails to');
+            console.log('📭 No students found to notify');
         }
 
         res.status(201).json({
