@@ -16,7 +16,8 @@ function Documents() {
   useEffect(() => {
     API.get('/requirements')
       .then(res => {
-        setRequirements(res.data)
+        const list = Array.isArray(res) ? res : (res.data ?? [])
+        setRequirements(list)
         // seed progressMap from localStorage
         const map = {}
         res.data.forEach(item => {
@@ -122,8 +123,8 @@ function Documents() {
               <DocumentCard
                 key={item._id}
                 title={item.title}
-                requirements={item.requirements.split('\n').filter(s => s.trim())}
-                steps={item.procedure.split('\n').filter(s => s.trim())}
+                requirements={item.requirements}
+                steps={item.procedure}
                 onProgressChange={handleProgressChange}
               />
             ))}

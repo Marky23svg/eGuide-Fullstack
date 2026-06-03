@@ -14,7 +14,7 @@ function Announcements() {
 
   useEffect(() => {
     API.get('/announcements')
-      .then(res => setAnnouncements(res.data))
+      .then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
