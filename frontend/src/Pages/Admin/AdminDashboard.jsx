@@ -121,7 +121,7 @@ function AdminDashboard() {
             <div className="flex flex-col gap-3">
               {recentAnnouncements.map(item => (
                 <div key={item._id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50/50 transition">
-                  <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-sm">📢</div>
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center shrink-0 text-sm"><FaBullhorn className='text-blue-600' size={11} /> </div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-700 truncate">{item.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{new Date(item.date_posted).toLocaleDateString()}</p>
@@ -162,7 +162,7 @@ function AdminDashboard() {
             <div className="flex flex-col gap-3">
               {recentDocs.map(item => (
                 <div key={item._id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-green-50/50 transition">
-                  <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0 text-sm">📄</div>
+                  <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center shrink-0 text-sm"> <FaClipboardList className='text-green-600' size={11} /></div>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-700 truncate">{item.title}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{new Date(item.date_posted).toLocaleDateString()}</p>

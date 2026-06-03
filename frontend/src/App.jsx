@@ -83,6 +83,13 @@ function SessionManager({ children }) {
     </>
   )
 }
+const getUser = () => {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw || raw === 'undefined' || raw === 'null') return {}
+    return JSON.parse(raw)
+  } catch { return {} }
+}
 
 function AdminRoute({ children }) {
   const token = localStorage.getItem('token')
