@@ -84,7 +84,8 @@ function AdminAnnouncements() {
 
   useEffect(() => {
     announcementsAPI.getAll().then(res => {
-      if (res.success) setAnnouncements(res.data)
+      const list = Array.isArray(res) ? res : (res.data ?? [])
+      setAnnouncements(list)
     }).catch(console.error)
   }, [])
 

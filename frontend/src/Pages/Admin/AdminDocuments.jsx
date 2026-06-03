@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import AdminLayout from './AdminLayout'
-import { MdClose, MdChevronRight, MdExpandMore, MdEdit, MdVisibility, MdAdd } from 'react-icons/md'
+import { MdClose, MdEdit, MdVisibility, MdAdd } from 'react-icons/md'
 import API from '../../services/api'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -8,11 +8,25 @@ import API from '../../services/api'
 const inputCls = 'w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 /** Convert structured items array → newline string for backend */
-const itemsToString = (items) => items.map(i => i.text).join('\n')
+const itemsToString = (items) => items.map(i =>
+  i.type === 'note' ? `[note:${i.severity || 'normal'}] ${i.text}` : i.text
+).join('\n')
 
 /** Convert newline string → structured items array */
-const stringToItems = (str, defaultType) =>
-  str.split('\n').filter(s => s.trim()).map((text, id) => ({ id, text, type: defaultType }))
+const stringToItems = (str) =>
+  str.split('\n').filter(s => s.trim()).map((text, id) => {
+    const m = text.match(/^\[note:(strict|moderate|normal|plain)\] (.*)/)
+    if (m) return { id, text: m[2], type: 'note', severity: m[1] }
+    if (text.startsWith('[note] ')) return { id, text: text.slice(7), type: 'note', severity: 'normal' }
+    return { id, text, type: 'item' }
+  })
+
+const NOTE_STYLES = {
+  strict:   { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-600',    label: '🔴 Strict' },
+  moderate: { bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-600', label: '🟡 Moderate' },
+  normal:   { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-600',   label: '🔵 Normal' },
+  plain:    { bg: '',             border: '',                   text: 'text-gray-600',   label: '⬜ Plain' },
+}
 
 // ── AddItemRow ────────────────────────────────────────────────────────────────
 
@@ -97,32 +111,70 @@ function AddItemRow({ onAdd, typeLabel, noteLabel }) {
 
 function ItemList({ items, onChange }) {
   const remove = (id) => onChange(items.filter(i => i.id !== id))
-  const update = (id, text) => onChange(items.map(i => i.id === id ? { ...i, text } : i))
+  const update = (id, field, value) => onChange(items.map(i => i.id === id ? { ...i, [field]: value } : i))
+  const toggleType = (id) => onChange(items.map(i => i.id === id
+    ? { ...i, type: i.type === 'note' ? 'item' : 'note', severity: i.severity || 'normal' }
+    : i
+  ))
 
   let docCounter = 0
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {items.map((item) => {
         if (item.type === 'item') docCounter++
         const num = docCounter
+        const ns = item.type === 'note' ? NOTE_STYLES[item.severity || 'normal'] : null
+        const isPlain = item.type === 'note' && item.severity === 'plain'
         return (
-          <div key={item.id} className="flex items-center gap-2 group">
-            <span className="text-xs text-gray-400 shrink-0 w-4 text-right">
-              {item.type === 'note' ? '•' : `${num}.`}
-            </span>
-            <input
-              type="text"
-              value={item.text}
-              onChange={e => update(item.id, e.target.value)}
-              className={`${inputCls} flex-1 py-1.5 ${item.type === 'note' ? 'text-amber-700 bg-amber-50 border-amber-200' : ''}`}
-            />
-            <button
-              onClick={() => remove(item.id)}
-              className="shrink-0 text-gray-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
-            >
-              <MdClose size={14} />
-            </button>
+          <div key={item.id} className={`rounded-xl p-2 flex flex-col gap-1.5 group ${
+            ns && !isPlain ? `border ${ns.bg} ${ns.border}` : 'border border-gray-200 bg-white'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm shrink-0 w-4 text-right font-bold ${
+                ns ? ns.text : 'text-gray-400'
+              }`}>
+                {item.type === 'note' ? '•' : `${num}.`}
+              </span>
+              <input
+                type="text"
+                value={item.text}
+                onChange={e => update(item.id, 'text', e.target.value)}
+                className={`flex-1 text-sm px-2 py-1 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  ns && !isPlain ? `${ns.bg} ${ns.border} ${ns.text} font-bold` : 'border-gray-200 text-gray-700'
+                }`}
+              />
+              <button
+                onClick={() => toggleType(item.id)}
+                title={item.type === 'note' ? 'Switch to item' : 'Switch to note'}
+                className="shrink-0 text-xs px-2 py-1 rounded-lg border border-gray-200 text-gray-400 hover:border-blue-300 hover:text-blue-500 transition"
+              >
+                {item.type === 'note' ? '🔢' : '📝'}
+              </button>
+              <button
+                onClick={() => remove(item.id)}
+                className="shrink-0 text-gray-300 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+              >
+                <MdClose size={14} />
+              </button>
+            </div>
+            {item.type === 'note' && (
+              <div className="flex gap-1.5 pl-6">
+                {Object.entries(NOTE_STYLES).map(([key, s]) => (
+                  <button
+                    key={key}
+                    onClick={() => update(item.id, 'severity', key)}
+                    className={`text-xs px-2 py-0.5 rounded-lg border transition font-medium ${
+                      (item.severity || 'normal') === key
+                        ? `${s.bg} ${s.border} ${s.text}`
+                        : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )
       })}
@@ -167,10 +219,14 @@ function PreviewPanel({ title, docItems, procItems }) {
               <ul className="flex flex-col gap-2">
                 {docItems.map((item, i) => {
                   if (item.type === 'note') {
+                    const ns = NOTE_STYLES[item.severity || 'normal']
+                    const isPlain = item.severity === 'plain'
                     return (
-                      <li key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
-                        <span className="text-amber-400 mt-0.5 shrink-0">•</span>
-                        <p className="text-xs text-amber-700">{item.text}</p>
+                      <li key={i} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                        isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
+                      }`}>
+                        <div className={`shrink-0 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                        <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{item.text}</p>
                       </li>
                     )
                   }
@@ -183,7 +239,7 @@ function PreviewPanel({ title, docItems, procItems }) {
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className={`shrink-0 w-2 h-2 rounded-full ${checked[key] ? 'bg-green-400' : 'bg-blue-400'}`} />
-                        <p className={`text-sm truncate ${checked[key] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{item.text}</p>
+                        <p className={`text-sm ${checked[key] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{item.text}</p>
                       </div>
                       <button
                         onClick={() => toggle(key)}
@@ -207,10 +263,14 @@ function PreviewPanel({ title, docItems, procItems }) {
               <ol className="flex flex-col gap-2">
                 {procItems.map((item, i) => {
                   if (item.type === 'note') {
+                    const ns = NOTE_STYLES[item.severity || 'normal']
+                    const isPlain = item.severity === 'plain'
                     return (
-                      <li key={i} className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
-                        <span className="text-amber-400 mt-0.5 shrink-0">•</span>
-                        <p className="text-xs text-amber-700">{item.text}</p>
+                      <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
+                        isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
+                      }`}>
+                        <div className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                        <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{item.text}</p>
                       </li>
                     )
                   }
@@ -270,7 +330,6 @@ function AdminDocuments() {
   const [docItems, setDocItems] = useState(EMPTY_ITEMS)
   const [procItems, setProcItems] = useState(EMPTY_ITEMS)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
@@ -278,7 +337,7 @@ function AdminDocuments() {
   const fetchRequirements = useCallback(async () => {
     try {
       const res = await API.get('/requirements')
-      setRequirements(res.data)
+      setRequirements(Array.isArray(res) ? res : (res.data ?? []))
     } catch {
       setError('Failed to load requirements')
     }
@@ -298,8 +357,8 @@ function AdminDocuments() {
 
   const openEdit = (item) => {
     setTitle(item.title)
-    setDocItems(stringToItems(item.requirements, 'item'))
-    setProcItems(stringToItems(item.procedure, 'item'))
+    setDocItems(stringToItems(item.requirements))
+    setProcItems(stringToItems(item.procedure))
     setEditingId(item._id)
     setError('')
     setPreviewMode(false)
@@ -347,7 +406,7 @@ function AdminDocuments() {
     }
   }
 
-  const toggleExpand = (id) => setExpandedId(prev => prev === id ? null : id)
+
 
   return (
     <AdminLayout activePage="Documents">
@@ -366,41 +425,20 @@ function AdminDocuments() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-8 text-center text-sm text-gray-300">
             No documents yet
           </div>
-        ) : requirements.map((item) => {
-          const isExpanded = expandedId === item._id
-          return (
+        ) : requirements.map((item) => (
             <div key={item._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <button onClick={() => toggleExpand(item._id)} className="text-gray-400 hover:text-gray-600 transition shrink-0">
-                    {isExpanded ? <MdExpandMore size={20} /> : <MdChevronRight size={20} />}
-                  </button>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
-                    <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
-                  </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
+                  <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
                   <button onClick={() => openEdit(item)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 transition">Edit</button>
                   <button onClick={() => setDeleteConfirm(item._id)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-500 transition">Delete</button>
                 </div>
               </div>
-
-              {isExpanded && (
-                <div className="px-6 pb-5 border-t border-gray-50 grid sm:grid-cols-2 gap-6 pt-4">
-                  <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Documents</p>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">{item.requirements}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Procedure</p>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">{item.procedure}</p>
-                  </div>
-                </div>
-              )}
             </div>
-          )
-        })}
+        ))}
       </div>
 
       {/* Add / Edit Modal */}

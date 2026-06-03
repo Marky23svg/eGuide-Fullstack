@@ -63,7 +63,7 @@ function Login() {
         }
       }
     } catch (error) {
-      setLoginError(error.response?.data?.message || error.message)
+      setLoginError(error.message || 'Login failed. Please try again.')
     } finally {
       setLoginLoading(false)
     }
@@ -195,7 +195,7 @@ return (
     {/* WRAPPER: card + robot together */}
     <div className="relative z-10 w-full max-w-sm">
 
-      {/* ── ROBOT BODY ── */}
+      {/* ── ROBOT (desktop only — side placement) ── */}
       <motion.img
         src="/robot-body.png"
         alt="Robot"
@@ -210,15 +210,8 @@ return (
             : { right: '100%', marginRight: '-40px', scaleX: -1, transform: 'scaleX(-1)'}
           ),
         }}
-        initial={{
-          x: activeTab === 'signup' ? -100 : 100,
-          opacity: 0.3,
-        }}
-        animate={{
-          x: 0,
-          opacity: 1,
-          y: [0, -6, 0],
-        }}
+        initial={{ x: activeTab === 'signup' ? -100 : 100, opacity: 0.3 }}
+        animate={{ x: 0, opacity: 1, y: [0, -6, 0] }}
         transition={{
           x: { type: 'spring', stiffness: 200, damping: 18 },
           opacity: { duration: 0.15 },
@@ -226,7 +219,7 @@ return (
         }}
       />
 
-      {/* ── ROBOT ARM ── */}
+      {/* ── ROBOT ARM (desktop only) ── */}
       <motion.img
         src="/robot-arm.png"
         alt="Robot Arm"
@@ -242,6 +235,33 @@ return (
           ),
         }}
       />
+
+      {/* ── ROBOT (mobile only — peeking above card like chatbot) ── */}
+      <div className="sm:hidden" style={{ position: 'relative', height: '90px' }}>
+        {/* body — clipped so only top half shows */}
+        <div style={{ overflow: 'hidden', height: '90px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', position: 'absolute', top: '0px', left: 0, right: 0 }}>
+          <motion.img
+            src="/body_top_peeking.png"
+            alt="Robot"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ width: '130px', pointerEvents: 'none', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.25))', top: '-10px', position: 'relative' }}
+          />
+        </div>
+        {/* arm — outside overflow:hidden, overlaps the card below */}
+        <img
+          src="/flap_top_peeking.png"
+          alt="Robot arm"
+          style={{
+            width: '75px',
+            position: 'absolute',
+            bottom: '-18px',
+            left: 'calc(50% + -10px)',
+            pointerEvents: 'none',
+            zIndex: 30,
+          }}
+        />
+      </div>
 
       {/* Card */}
       <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-[0_10px_30px_rgba(0,0,0,0.5)] w-full overflow-y-auto max-h-[90vh]" style={{ zIndex: 10 }}>

@@ -14,7 +14,7 @@ function Announcements() {
 
   useEffect(() => {
     API.get('/announcements')
-      .then(res => setAnnouncements(res.data))
+      .then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -34,7 +34,7 @@ function Announcements() {
       <Navbar />
 
       {/* Header */}
-      <div data-nav="dark" className="relative border-b border-gray-100 pt-24 pb-10 px-8 overflow-hidden">
+      <div data-nav="dark" className="relative pt-24 pb-10 px-8 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${announcementBg})` }} />
         <div className="absolute inset-0 bg-black/60" />
         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-50 to-transparent" />
