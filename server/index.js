@@ -51,7 +51,9 @@ app.use(cors({
         'https://e-guide-fullstack.vercel.app',
         'https://eguide-server.onrender.com',
         'https://eguide-deployment.onrender.com',
-        'https://eguide-deployment.vercel.app'
+        'https://eguide-deployment.vercel.app',
+        'https://eguide-fullstack-gluh.onrender.com',
+        'https://e-guide-fullstack-cjdmrk.vercel.app'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
