@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Guard: ensure the base URL always ends with /api
+// This prevents misconfigured env vars (missing /api suffix) from causing 404s
+const API_BASE_URL = RAW_API_URL.endsWith('/api')
+    ? RAW_API_URL
+    : RAW_API_URL.replace(/\/?$/, '/api');
 
 const API = axios.create({
     baseURL: API_BASE_URL,
