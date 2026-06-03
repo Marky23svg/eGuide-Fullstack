@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import AdminLayout from './AdminLayout'
-import { MdClose, MdChevronRight, MdExpandMore, MdEdit, MdVisibility, MdAdd } from 'react-icons/md'
+import { MdClose, MdEdit, MdVisibility, MdAdd } from 'react-icons/md'
 import API from '../../services/api'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -270,7 +270,6 @@ function AdminDocuments() {
   const [docItems, setDocItems] = useState(EMPTY_ITEMS)
   const [procItems, setProcItems] = useState(EMPTY_ITEMS)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
-  const [expandedId, setExpandedId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [previewMode, setPreviewMode] = useState(false)
@@ -347,7 +346,7 @@ function AdminDocuments() {
     }
   }
 
-  const toggleExpand = (id) => setExpandedId(prev => prev === id ? null : id)
+
 
   return (
     <AdminLayout activePage="Documents">
@@ -366,41 +365,20 @@ function AdminDocuments() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-8 text-center text-sm text-gray-300">
             No documents yet
           </div>
-        ) : requirements.map((item) => {
-          const isExpanded = expandedId === item._id
-          return (
+        ) : requirements.map((item) => (
             <div key={item._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-6 py-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <button onClick={() => toggleExpand(item._id)} className="text-gray-400 hover:text-gray-600 transition shrink-0">
-                    {isExpanded ? <MdExpandMore size={20} /> : <MdChevronRight size={20} />}
-                  </button>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
-                    <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
-                  </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
+                  <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-4">
                   <button onClick={() => openEdit(item)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 transition">Edit</button>
                   <button onClick={() => setDeleteConfirm(item._id)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-500 transition">Delete</button>
                 </div>
               </div>
-
-              {isExpanded && (
-                <div className="px-6 pb-5 border-t border-gray-50 grid sm:grid-cols-2 gap-6 pt-4">
-                  <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Documents</p>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">{item.requirements}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Procedure</p>
-                    <p className="text-sm text-gray-600 whitespace-pre-line">{item.procedure}</p>
-                  </div>
-                </div>
-              )}
             </div>
-          )
-        })}
+        ))}
       </div>
 
       {/* Add / Edit Modal */}

@@ -47,7 +47,7 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
           <motion.div
             className="fixed top-0 right-0 h-full w-72 z-[70] md:hidden overflow-y-auto"
             style={{
-              backgroundColor: '#0f0f23',
+              backgroundColor: '#030712',
               boxShadow: '-8px 0 32px rgba(0,0,0,0.5)',
             }}
             initial={{ x: '100%' }}
@@ -55,11 +55,11 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
-            <div className="flex flex-col min-h-full" style={{ backgroundColor: '#16213e' }}>
+            <div className="flex flex-col min-h-full" style={{ backgroundColor: '#030712' }}>
               {/* Header row with profile and X button side by side */}
               <motion.div
                 className="flex items-center justify-between px-5 pt-5 pb-4"
-                style={{ backgroundColor: '#16213e' }}
+                style={{ backgroundColor: '#030712' }}
                 initial={{ x: 50, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.1, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
@@ -83,7 +83,7 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
               </motion.div>
 
               {/* Navigation links - below the profile row */}
-              <div className="flex-1 px-5 pt-2" style={{ backgroundColor: '#16213e' }}>
+              <div className="flex-1 px-5 pt-2" style={{ backgroundColor: '#030712' }}>
                 <motion.div
                   className="flex flex-col gap-1"
                   initial="hidden"
