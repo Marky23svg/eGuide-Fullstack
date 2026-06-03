@@ -15,12 +15,21 @@ router.post('/query', async (req, res) => {
     }
 
     const sanitizedQuestion = question.trim().slice(0, 500);
-    const retrievedSources = await retrieveChatbotContext(sanitizedQuestion, 4);
-    const answer = generateChatbotAnswer(sanitizedQuestion, retrievedSources);
+    const { results: retrievedSources, correctedInterpretation } =
+      await retrieveChatbotContext(sanitizedQuestion, 4);
+
+    const { text: answer, requirementSources } = generateChatbotAnswer(
+      sanitizedQuestion,
+      retrievedSources
+    );
 
     res.json({
       success: true,
       answer,
+      requirementSources,
+      // Non-null only when the bot corrected typos/abbreviations.
+      // e.g. user typed "enrollmnt" → correctedInterpretation: "enrollment"
+      correctedInterpretation: correctedInterpretation || null,
       sources: retrievedSources.map((item) => ({
         id: item.source.id,
         type: item.source.type,

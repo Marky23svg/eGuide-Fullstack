@@ -73,18 +73,45 @@ const isFuzzyMatch = (query, target) => {
 /**
  * Given a list of query tokens (possibly with typos), expand them by finding
  * fuzzy matches against a known vocabulary set.
- * Returns a new Set of tokens that includes both originals and matched corrections.
+ * Returns { expanded: Set, corrections: Map<original, corrected> }
+ * so callers know which tokens were corrected.
  */
 const expandTokensWithFuzzy = (queryTokens, vocabularyTokens) => {
   const expanded = new Set(queryTokens);
+  const corrections = new Map(); // typo → best matching vocab word
   for (const qToken of queryTokens) {
     for (const vToken of vocabularyTokens) {
       if (!expanded.has(vToken) && isFuzzyMatch(qToken, vToken)) {
         expanded.add(vToken);
+        // Only record as a correction if the token actually differs (real typo)
+        if (qToken !== vToken && !corrections.has(qToken)) {
+          corrections.set(qToken, vToken);
+        }
       }
     }
   }
-  return expanded;
+  return { expanded, corrections };
+};
+
+/**
+ * Partial / substring matching.
+ * Returns { expanded: Set, corrections: Map<original, corrected> }
+ */
+const expandTokensWithPartial = (queryTokens, vocabularyTokens) => {
+  const expanded = new Set(queryTokens);
+  const corrections = new Map();
+  for (const qToken of queryTokens) {
+    if (qToken.length < 4) continue;
+    for (const vToken of vocabularyTokens) {
+      if (!expanded.has(vToken) && (vToken.startsWith(qToken) || qToken.startsWith(vToken))) {
+        expanded.add(vToken);
+        if (qToken !== vToken && !corrections.has(qToken)) {
+          corrections.set(qToken, vToken);
+        }
+      }
+    }
+  }
+  return { expanded, corrections };
 };
 
 const normalize = (text = '') =>
@@ -501,13 +528,14 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
   // Handle latest announcements specially
   if (isLatestAnnouncement) {
     const announcements = await searchAnnouncementSources(question, true);
-    
-    // Format announcements directly without scoring
-    return announcements.map((source, index) => ({
-      source,
-      chunk: source.content,
-      score: 100 - index, // High scores for latest announcements
-    }));
+    return {
+      results: announcements.map((source, index) => ({
+        source,
+        chunk: source.content,
+        score: 100 - index,
+      })),
+      correctedInterpretation: null,
+    };
   }
   
   const [requirements, announcements] = await Promise.all([
@@ -515,7 +543,7 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
     questionType === 'requirement' ? [] : searchAnnouncementSources(question, false),
   ]);
 
-  // Build vocabulary from all candidate source titles + content for fuzzy expansion
+  // Build vocabulary from all candidate source titles + content for fuzzy + partial expansion
   const allSources = [...requirements, ...announcements];
   const vocabularyTokens = new Set(
     allSources.flatMap((source) => [
@@ -523,7 +551,32 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
       ...tokenize(source.content),
     ])
   );
-  const expandedTokens = expandTokensWithFuzzy(questionTokens, vocabularyTokens);
+
+  // Step 1: fuzzy expand (handles typos like "reqirements" → "requirements")
+  const { expanded: fuzzyExpanded, corrections: fuzzyCorrections } =
+    expandTokensWithFuzzy(questionTokens, vocabularyTokens);
+
+  // Step 2: partial expand (handles abbreviations like "enrol" → "enrollment")
+  const { expanded: expandedTokens, corrections: partialCorrections } =
+    expandTokensWithPartial([...fuzzyExpanded], vocabularyTokens);
+
+  // Merge correction maps — fuzzy corrections take priority
+  const allCorrections = new Map([...partialCorrections, ...fuzzyCorrections]);
+
+  // Build a human-readable "did you mean" string from real corrections
+  // Only surface corrections for tokens the user actually typed (not expansions of expansions)
+  const userTypedTokens = new Set(questionTokens);
+  const meaningfulCorrections = [...allCorrections.entries()].filter(
+    ([original]) => userTypedTokens.has(original)
+  );
+
+  let correctedInterpretation = null;
+  if (meaningfulCorrections.length > 0) {
+    // Reconstruct the question substituting corrected words
+    const correctionMap = new Map(meaningfulCorrections);
+    const correctedTokens = questionTokens.map((t) => correctionMap.get(t) || t);
+    correctedInterpretation = correctedTokens.join(' ');
+  }
 
   let candidates = [...requirements, ...announcements]
     .flatMap((source) =>
@@ -542,6 +595,11 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
       candidates = sogCandidates;
     }
     topK = 1;
+    // For SOG queries, corrections are less meaningful — return first result directly
+    return {
+      results: candidates.slice(0, 1),
+      correctedInterpretation,
+    };
   }
 
   // Score gap filtering
@@ -564,22 +622,26 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
     if (ranked.length >= topK) break;
   }
 
-  return ranked;
+  return { results: ranked, correctedInterpretation };
 };
 
 const formatRequirementAnswer = (source) => {
-  const requirements = source.requirementsText
-    ? summarizeText(source.requirementsText, 260)
-    : summarizeText(source.content.split('\n').slice(1, 2).join(' '), 260);
+  // Show only a brief snippet — first sentence/clause of each field
+  const firstSentence = (text = '') => {
+    const cleaned = normalize(text).trim();
+    if (!cleaned) return '';
+    // Take up to the first punctuation boundary or 120 chars
+    const match = cleaned.match(/^.{20,120}?[.,;]/);
+    return match ? match[0].trim() : cleaned.slice(0, 120).trim() + (cleaned.length > 120 ? '...' : '');
+  };
 
-  const procedure = source.procedureText
-    ? summarizeText(source.procedureText, 260)
-    : summarizeText(source.content.split('\n').slice(2).join(' '), 260);
+  const reqSnippet = firstSentence(source.requirementsText || source.content.split('\n')[1] || '');
+  const procSnippet = firstSentence(source.procedureText || source.content.split('\n')[2] || '');
 
   return [
     `📘 ${source.title}`,
-    requirements ? `Requirements: ${requirements}` : '',
-    procedure ? `Procedure: ${procedure}` : '',
+    reqSnippet ? `Requirements: ${reqSnippet}` : '',
+    procSnippet ? `Procedure: ${procSnippet}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -604,60 +666,62 @@ const formatAnnouncementAnswer = (source) => {
 };
 
 export const generateChatbotAnswer = (question, retrievedSources = []) => {
-  if (!question?.trim()) return buildGenericResponse(question);
+  if (!question?.trim()) return { text: buildGenericResponse(question), requirementSources: [] };
 
   if (isGreeting(question)) {
-    return buildGenericResponse(question);
+    return { text: buildGenericResponse(question), requirementSources: [] };
   }
-  
+
   // Special handling for latest announcements query
   const isLatestAnnouncement = isLatestAnnouncementQuery(question);
-  
+
   if (isLatestAnnouncement && retrievedSources.length > 0) {
     const announcementsList = retrievedSources
       .map((item, index) => {
         const source = item.source;
-        // Safely parse date_posted which may be a string, Date, or number
         const parseDate = (val) => {
           if (!val) return null;
-          if (typeof val === 'string') {
-            const s = val.split('T')[0];
-            return s || null;
-          }
+          if (typeof val === 'string') return val.split('T')[0] || null;
           if (val instanceof Date) return val.toISOString().split('T')[0];
           if (typeof val === 'number') return new Date(val).toISOString().split('T')[0];
           return null;
         };
-
         const dateFromMeta = parseDate(source.metadata?.date_posted);
         const date = source.date || dateFromMeta || 'Recent';
         const description = summarizeText(source.description || source.fullDetails || source.content, 120);
         return `${index + 1}. **${source.title}**\n   📅 ${date}\n   ${description}`;
       })
       .join('\n\n');
-    
-    return `📢 **Latest Announcements**\n\n${announcementsList}\n\nFor more details, ask about a specific announcement by name.`;
+
+    return {
+      text: `📢 **Latest Announcements**\n\n${announcementsList}\n\nFor more details, ask about a specific announcement by name.`,
+      requirementSources: [],
+    };
   }
 
   if (!retrievedSources.length) {
-    return buildGenericResponse(question);
+    return { text: buildGenericResponse(question), requirementSources: [] };
   }
-  // Dynamic threshold: allow lower threshold for explicit announcement queries
-  const questionType = classifyQuestionType(question);
-  const dynamicThreshold = questionType === 'announcement' ? Math.min(RELEVANCE_SCORE_THRESHOLD, 6) : RELEVANCE_SCORE_THRESHOLD;
 
-  // Check relevance score threshold using dynamic threshold
+  const questionType = classifyQuestionType(question);
+  const dynamicThreshold = questionType === 'announcement'
+    ? Math.min(RELEVANCE_SCORE_THRESHOLD, 6)
+    : RELEVANCE_SCORE_THRESHOLD;
+
   const bestScore = retrievedSources[0]?.score || 0;
   if (bestScore < dynamicThreshold) {
-    return 'I couldn\'t find information relevant to your question. Please try asking about a specific document, requirement, or announcement. For example: "What are the enrollment requirements?" or "Latest announcements?"';
+    return {
+      text: 'I couldn\'t find information relevant to your question. Please try asking about a specific document, requirement, or announcement. For example: "What are the enrollment requirements?" or "Latest announcements?"',
+      requirementSources: [],
+    };
   }
 
-  // Filter out low-relevance sources: keep only sources scoring at least 50% of best score
   const minRelevantScore = Math.max(bestScore * 0.5, dynamicThreshold);
   const relevantSources = retrievedSources.filter((item) => item.score >= minRelevantScore);
 
   const isSog = isSogQuestion(question);
-  if (relevantSources.length === 0) return buildGenericResponse(question);
+  if (relevantSources.length === 0) return { text: buildGenericResponse(question), requirementSources: [] };
+
   const source = relevantSources[0].source;
 
   if (isSog) {
@@ -665,7 +729,12 @@ export const generateChatbotAnswer = (question, retrievedSources = []) => {
       ? formatRequirementAnswer(source)
       : formatAnnouncementAnswer(source);
 
-    return `📝 Summary of Grades (SOG) request information:\n\n${answer}`;
+    return {
+      text: `📝 Summary of Grades (SOG) request information:\n\n${answer}`,
+      requirementSources: source.type === 'requirement'
+        ? [{ id: source.id, title: source.title }]
+        : [],
+    };
   }
 
   const sourceLines = relevantSources
@@ -676,7 +745,15 @@ export const generateChatbotAnswer = (question, retrievedSources = []) => {
     )
     .join('\n\n');
 
-  return `Based on the latest eGuide records, here's what I found:\n\n${sourceLines}\n\nIf you want, I can also narrow this down to a specific document or announcement.`;
+  // Collect requirement sources for "View Document" buttons
+  const requirementSources = relevantSources
+    .filter((item) => item.source.type === 'requirement')
+    .map((item) => ({ id: item.source.id, title: item.source.title }));
+
+  return {
+    text: `Based on the latest eGuide records, here's what I found:\n\n${sourceLines}\n\nFor full details, use the button below.`,
+    requirementSources,
+  };
 };
 
 // Function to ensure MongoDB text indexes exist (call this on app startup)

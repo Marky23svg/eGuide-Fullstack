@@ -2,18 +2,24 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { CgClose } from 'react-icons/cg';
+import { useNavigate } from 'react-router-dom';
 import { chatbot as chatbotApi } from '../services/api';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const MESSAGE_LIMIT = 30;
-// Card height constant — used both for the card and to position the flap
 const CARD_HEIGHT = 'min(520px, calc(85vh - 120px))';
 
 const Chatbot = () => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { text: 'Welcome to eGuide ICCT! How can I help you navigate your academic requirements today?', sender: 'bot' },
+    {
+      text: 'Welcome to eGuide ICCT! How can I help you navigate your academic requirements today?',
+      sender: 'bot',
+      requirementSources: [],
+      correctedInterpretation: null,
+    },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,24 +37,48 @@ const Chatbot = () => {
     if (!trimmed) return;
 
     if (messageCount >= MESSAGE_LIMIT) {
-      setMessages((prev) => [...prev, { text: 'You have reached the message limit for this session. Please refresh to continue.', sender: 'bot' }]);
+      setMessages((prev) => [
+        ...prev,
+        { text: 'You have reached the message limit for this session. Please refresh to continue.', sender: 'bot', requirementSources: [], correctedInterpretation: null },
+      ]);
       setInput('');
       return;
     }
 
-    setMessages((prev) => [...prev, { text: trimmed, sender: 'user' }]);
+    setMessages((prev) => [...prev, { text: trimmed, sender: 'user', requirementSources: [] }]);
     setMessageCount((c) => c + 1);
     setInput('');
     setIsLoading(true);
 
     try {
       const response = await chatbotApi.ask(trimmed);
-      setMessages((prev) => [...prev, { text: response.answer || 'I could not find a useful answer for that query.', sender: 'bot' }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: response.answer || 'I could not find a useful answer for that query.',
+          sender: 'bot',
+          requirementSources: response.requirementSources || [],
+          correctedInterpretation: response.correctedInterpretation || null,
+        },
+      ]);
     } catch (error) {
-      setMessages((prev) => [...prev, { text: 'I am having trouble reaching the knowledge base right now. Please try again in a moment.', sender: 'bot' }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: 'I am having trouble reaching the knowledge base right now. Please try again in a moment.',
+          sender: 'bot',
+          requirementSources: [],
+          correctedInterpretation: null,
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleViewDocument = (requirementId) => {
+    setIsOpen(false);
+    navigate(`/requirements?highlight=${requirementId}`);
   };
 
   return (
@@ -96,27 +126,25 @@ const Chatbot = () => {
               alignItems: 'center',
             }}
           >
-            {/* Robot row: clipped container + hand side by side */}
-            <div style={{ 
-              width: '100%', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'flex-end', 
-              flexShrink: 0, 
-              position: 'relative', 
-              height: '100px',  
+            {/* Robot row */}
+            <div style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'flex-end',
+              flexShrink: 0,
+              position: 'relative',
+              height: '100px',
+            }}>
+              <div style={{
+                overflow: 'hidden',
+                height: '100px',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                position: 'absolute',
+                top: '20px',
               }}>
-
-              {/* Clip box — shows only top half of robot */}
-              <div style={{ 
-                overflow: 'hidden', 
-                height: '100px', 
-                display: 'flex', 
-                alignItems: 'flex-start', 
-                justifyContent: 'center', 
-                position:'absolute', 
-                top:'20px',
-                }}>
                 <motion.img
                   src="/body_top_peeking.png"
                   alt="Robot"
@@ -125,8 +153,6 @@ const Chatbot = () => {
                   style={{ width: '110px', pointerEvents: 'none', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.25))' }}
                 />
               </div>
-
-              {/* Hand — static, sits beside robot, overlaps card top */}
               <img
                 src="/flap_top_peeking.png"
                 alt="Robot hand"
@@ -146,7 +172,6 @@ const Chatbot = () => {
               style={{ width: '100%', height: CARD_HEIGHT, position: 'relative' }}
               className="bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.25)] flex flex-col overflow-hidden"
             >
-
               {/* Header */}
               <div className="p-4 bg-gradient-to-r from-[#1a73e8] to-[#0d47a1] text-white flex items-center justify-between flex-shrink-0 rounded-t-2xl">
                 <div>
@@ -172,7 +197,19 @@ const Chatbot = () => {
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-4 bg-[#f8f9fa] dark:bg-[#0a0a0a]">
                 {messages.map((msg, index) => (
-                  <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+
+                    {/* "Did you mean?" correction pill — shown above the bubble */}
+                    {msg.sender === 'bot' && msg.correctedInterpretation && (
+                      <div className="flex items-center gap-1.5 mb-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-full text-[11px] text-amber-700 max-w-[85%]">
+                        <span>🔍</span>
+                        <span>
+                          Did you mean: <span className="font-semibold">{msg.correctedInterpretation}</span>?
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Bubble */}
                     <div
                       className={`max-w-[85%] p-3 rounded-2xl shadow-sm text-sm ${
                         msg.sender === 'user'
@@ -183,8 +220,26 @@ const Chatbot = () => {
                     >
                       {msg.text}
                     </div>
+
+                    {/* "View Document" buttons — only for bot messages with requirement sources */}
+                    {msg.sender === 'bot' && msg.requirementSources?.length > 0 && (
+                      <div className="flex flex-col gap-1.5 mt-2 max-w-[85%]">
+                        {msg.requirementSources.map((src) => (
+                          <button
+                            key={src.id}
+                            onClick={() => handleViewDocument(src.id)}
+                            className="flex items-center gap-2 px-3 py-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
+                          >
+                            <span>📄</span>
+                            <span className="truncate">View: {src.title}</span>
+                            <span className="ml-auto">→</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
+
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-gray-100 dark:border-zinc-800 flex gap-1">

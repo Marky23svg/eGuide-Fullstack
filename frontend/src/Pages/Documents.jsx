@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import DocumentCard from '../components/DocumentCard'
@@ -12,12 +13,15 @@ function Documents() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [progressMap, setProgressMap] = useState({})
+  const [highlightId, setHighlightId] = useState(null)
+
+  const [searchParams] = useSearchParams()
+  const cardRefs = useRef({})
 
   useEffect(() => {
     API.get('/requirements')
       .then(res => {
         setRequirements(res.data)
-        // seed progressMap from localStorage
         const map = {}
         res.data.forEach(item => {
           const steps = item.procedure.split('\n').filter(s => s.trim())
@@ -35,11 +39,31 @@ function Documents() {
       .finally(() => setLoading(false))
   }, [])
 
+  // After data loads, scroll to + highlight the card specified in ?highlight=<id>
+  useEffect(() => {
+    const id = searchParams.get('highlight')
+    if (!id || loading) return
+
+    setHighlightId(id)
+
+    // Small delay to let the grid render
+    const timer = setTimeout(() => {
+      const el = cardRefs.current[id]
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      // Remove highlight ring after 3s
+      const clearTimer = setTimeout(() => setHighlightId(null), 3000)
+      return () => clearTimeout(clearTimer)
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [loading, searchParams])
+
   const handleProgressChange = (title, ratio) => {
     setProgressMap(prev => ({ ...prev, [title]: ratio }))
   }
 
-  // combined score: steps ratio (primary) + req ratio (secondary tiebreak)
   const getScore = (item) => {
     const saved = localStorage.getItem(`doc_progress_${item.title}`)
     if (!saved) return progressMap[item.title] ?? 0
@@ -119,13 +143,22 @@ function Documents() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {filtered.map((item) => (
-              <DocumentCard
+              <div
                 key={item._id}
-                title={item.title}
-                requirements={item.requirements.split('\n').filter(s => s.trim())}
-                steps={item.procedure.split('\n').filter(s => s.trim())}
-                onProgressChange={handleProgressChange}
-              />
+                ref={el => { cardRefs.current[item._id] = el }}
+                className={`rounded-2xl transition-all duration-300 ${
+                  highlightId === item._id
+                    ? 'ring-4 ring-blue-500 ring-offset-2 shadow-[0_0_24px_rgba(26,115,232,0.4)]'
+                    : ''
+                }`}
+              >
+                <DocumentCard
+                  title={item.title}
+                  requirements={item.requirements.split('\n').filter(s => s.trim())}
+                  steps={item.procedure.split('\n').filter(s => s.trim())}
+                  onProgressChange={handleProgressChange}
+                />
+              </div>
             ))}
           </div>
         )}
