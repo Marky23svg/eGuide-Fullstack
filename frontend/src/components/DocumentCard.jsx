@@ -190,7 +190,7 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
       >
         {/* Title area */}
         <div className="px-5 pt-6 pb-4">
-          <h3 className={`text-xl font-black leading-snug ${allDone ? 'text-green-700' : 'text-gray-800'}`}>
+          <h3 className={`text-xl font-black leading-snug line-clamp-2 ${allDone ? 'text-green-700' : 'text-gray-800'}`}>
             {title}
           </h3>
           {allDone && (
