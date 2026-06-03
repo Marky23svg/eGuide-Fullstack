@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AdminLayout from './AdminLayout'
 import { FaBullhorn, FaClipboardList, FaUsers } from 'react-icons/fa'
-import { MdTrendingUp, MdAccessTime, MdCheckCircle, MdAdd } from 'react-icons/md'
+import { MdAccessTime, MdCheckCircle, MdAdd } from 'react-icons/md'
 import API from '../../services/api'
 
 function AdminDashboard() {
@@ -173,31 +173,6 @@ function AdminDashboard() {
           )}
         </div>
 
-      </div>
-
-      {/* System overview */}
-      <div className="mt-6 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <MdTrendingUp className="text-purple-500" size={16} />
-          <h2 className="text-sm font-bold text-gray-800">System Overview</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
-            <p className="text-xs text-blue-500 font-semibold uppercase tracking-widest mb-1">Content</p>
-            <p className="text-2xl font-black text-blue-700">{counts.announcements}</p>
-            <p className="text-xs text-blue-400 mt-0.5">announcements published</p>
-          </div>
-          <div className="rounded-xl bg-green-50 border border-green-100 p-4">
-            <p className="text-xs text-green-500 font-semibold uppercase tracking-widest mb-1">Documents</p>
-            <p className="text-2xl font-black text-green-700">{counts.requirements}</p>
-            <p className="text-xs text-green-400 mt-0.5">document guides available</p>
-          </div>
-          <div className="rounded-xl bg-purple-50 border border-purple-100 p-4">
-            <p className="text-xs text-purple-500 font-semibold uppercase tracking-widest mb-1">Users</p>
-            <p className="text-2xl font-black text-purple-700">{counts.students}</p>
-            <p className="text-xs text-purple-400 mt-0.5">registered students</p>
-          </div>
-        </div>
       </div>
 
     </AdminLayout>
