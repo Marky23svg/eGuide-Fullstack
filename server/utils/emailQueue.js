@@ -23,7 +23,8 @@ const processNext = async () => {
       console.error(`❌ [EmailQueue] Failed "${job.subject}": ${result.error}`);
     }
   } catch (err) {
-    console.error(`❌ [EmailQueue] Unexpected error: ${err.message}`);
+    console.error(`❌ [EmailQueue] Unexpected error for "${job.subject}": ${err.message}`);
+    console.error(`   Stack: ${err.stack}`);
   } finally {
     processing = false;
     // Process next job on the next tick so the call stack stays clean

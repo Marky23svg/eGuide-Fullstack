@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import { config } from './config/config.js';
+import { verifyEmailTransporter } from './config/email.js';
 import authRoutes from './routes/authRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
@@ -48,10 +49,6 @@ app.use(cors({
         'http://localhost:4173',
         'http://127.0.0.1:5173',
         'http://127.0.0.1:4173',
-        'https://e-guide-fullstack.vercel.app',
-        'https://eguide-server.onrender.com',
-        'https://eguide-deployment.onrender.com',
-        'https://eguide-deployment.vercel.app',
         'https://eguide-fullstack-gluh.onrender.com',
         'https://e-guide-fullstack-cjdmrk.vercel.app'
     ],
@@ -97,6 +94,8 @@ app.use('/api/upload', uploadRoutes);
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(config.port, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://localhost:${config.port}`);
+    // Verify SMTP connection at startup — logs success or failure immediately
+    verifyEmailTransporter();
 });
 
 // ── Global error handler (must be last) ──────────────────────────────────────
