@@ -30,6 +30,8 @@ export const config = {
   email: {
     user: process.env.EMAIL_USER,
     appPassword: process.env.EMAIL_APP_PASSWORD,
+    // 465 (SSL) or 587 (STARTTLS). Render free tier blocks both — paid instance required.
+    smtpPort: parseInt(process.env.EMAIL_SMTP_PORT, 10) || 465,
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,

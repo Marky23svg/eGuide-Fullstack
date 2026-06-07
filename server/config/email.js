@@ -3,12 +3,33 @@ import nodemailer from 'nodemailer';
 
 dotenv.config();
 
+// ── SMTP port configuration ───────────────────────────────────────────────────
+// Render FREE tier blocks outbound SMTP (ports 465 & 587) at the network level.
+// Emails will silently fail on free instances — upgrade to a paid Render instance
+// to enable outbound SMTP.
+//
+// Port behaviour:
+//   465 → SSL (secure: true)   — recommended for Gmail with App Password
+//   587 → STARTTLS (secure: false, requireTLS: true)
+//
+// Set EMAIL_SMTP_PORT=465 or EMAIL_SMTP_PORT=587 in your environment.
+// Defaults to 465 if not set.
+const SMTP_PORT = parseInt(process.env.EMAIL_SMTP_PORT, 10) || 465;
+const SMTP_SECURE = SMTP_PORT === 465; // true for 465 (SSL), false for 587 (STARTTLS)
+
 const createTransporter = () => {
     return nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: SMTP_PORT,
+        secure: SMTP_SECURE,         // true = SSL on 465, false = STARTTLS on 587
+        requireTLS: !SMTP_SECURE,    // force STARTTLS upgrade on port 587
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_APP_PASSWORD,
+        },
+        tls: {
+            // Reject connections that fail certificate validation
+            rejectUnauthorized: true,
         },
     });
 };
