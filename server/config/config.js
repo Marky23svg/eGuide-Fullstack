@@ -6,8 +6,7 @@
 const REQUIRED = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'EMAIL_USER',
-  'EMAIL_APP_PASSWORD',
+  'BREVO_API_KEY',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
@@ -28,10 +27,11 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   email: {
-    user: process.env.EMAIL_USER,
-    appPassword: process.env.EMAIL_APP_PASSWORD,
-    // 465 (SSL) or 587 (STARTTLS). Render free tier blocks both — paid instance required.
-    smtpPort: parseInt(process.env.EMAIL_SMTP_PORT, 10) || 465,
+    brevoApiKey: process.env.BREVO_API_KEY,
+    // Sender email — must be verified in Brevo dashboard (just click the verification link)
+    // No domain ownership required.
+    from: process.env.EMAIL_USER || 'iccteguide@gmail.com',
+    fromName: process.env.EMAIL_FROM_NAME || 'eGuide ICCT',
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
