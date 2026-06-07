@@ -6,8 +6,7 @@
 const REQUIRED = [
   'MONGODB_URI',
   'JWT_SECRET',
-  'BREVO_SMTP_USER',
-  'BREVO_SMTP_PASS',
+  'BREVO_API_KEY',
   'CLOUDINARY_CLOUD_NAME',
   'CLOUDINARY_API_KEY',
   'CLOUDINARY_API_SECRET',
@@ -28,8 +27,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   email: {
-    brevoSmtpUser: process.env.BREVO_SMTP_USER,
-    brevoSmtpPass: process.env.BREVO_SMTP_PASS,
+    brevoApiKey: process.env.BREVO_API_KEY,
     from: process.env.EMAIL_USER || 'iccteguide@gmail.com',
     fromName: process.env.EMAIL_FROM_NAME || 'eGuide ICCT',
   },

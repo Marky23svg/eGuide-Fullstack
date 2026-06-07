@@ -1,89 +1,75 @@
-import nodemailer from 'nodemailer';
+// Uses Brevo HTTP API — no SMTP, no port issues, works on any host.
+// API key starts with xkeysib-
+// Set BREVO_API_KEY in your environment.
 
-// ── Brevo SMTP Relay ──────────────────────────────────────────────────────────
-// Uses Brevo's SMTP relay — no domain ownership required.
-// Free tier: 300 emails/day.
-//
-// Setup:
-//   1. Sign up at https://app.brevo.com (free)
-//   2. Go to Profile → SMTP & API → SMTP tab
-//   3. Copy your SMTP login (your Brevo account email) and generate an SMTP password
-//   4. Verify your sender email under Senders & IP → Senders (just click the link they send)
-//
-// Required env vars:
-//   BREVO_SMTP_USER     → your Brevo account email (e.g. you@gmail.com)
-//   BREVO_SMTP_PASS     → the SMTP password from Brevo dashboard (NOT your login password)
-//   EMAIL_USER          → the verified sender email shown in the "from" field
-//   EMAIL_FROM_NAME     → display name (default: eGuide ICCT)
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-const createTransporter = () => {
-    return nodemailer.createTransport({
-        host: 'smtp-relay.brevo.com',
-        port: 587,
-        secure: false, // STARTTLS
-        auth: {
-            user: process.env.BREVO_SMTP_USER,
-            pass: process.env.BREVO_SMTP_PASS,
-        },
-    });
-};
+const FROM_EMAIL   = process.env.EMAIL_USER      || 'iccteguide@gmail.com';
+const FROM_NAME    = process.env.EMAIL_FROM_NAME || 'eGuide ICCT';
 
-const FROM_EMAIL = process.env.EMAIL_USER || 'iccteguide@gmail.com';
-const FROM_NAME  = process.env.EMAIL_FROM_NAME || 'eGuide ICCT';
-
-// ── Startup verification ──────────────────────────────────────────────────────
+// ── Startup check ─────────────────────────────────────────────────────────────
 export const verifyEmailTransporter = async () => {
-    if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
-        console.warn('⚠️  [Email] BREVO_SMTP_USER or BREVO_SMTP_PASS not set — emails disabled.');
+    if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️  [Email] BREVO_API_KEY not set — emails disabled.');
         return false;
     }
-    try {
-        const transporter = createTransporter();
-        await transporter.verify();
-        console.log(`✅ [Email] Brevo SMTP ready — sending as: ${FROM_NAME} <${FROM_EMAIL}>`);
-        return true;
-    } catch (err) {
-        console.error(`❌ [Email] Brevo SMTP verification failed: ${err.message}`);
-        return false;
-    }
+    console.log(`✅ [Email] Brevo HTTP API ready — from: ${FROM_NAME} <${FROM_EMAIL}>`);
+    console.log(`   Key prefix: ${process.env.BREVO_API_KEY.slice(0, 16)}... length=${process.env.BREVO_API_KEY.length}`);
+    return true;
 };
 
 // ── Bulk sender ───────────────────────────────────────────────────────────────
 export const sendBulkEmail = async (recipients, subject, htmlContent) => {
-    if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
-        console.warn('⚠️  [Email] Skipping — Brevo SMTP credentials not configured.');
-        return { success: false, error: 'Brevo SMTP credentials not configured.' };
+    if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️  [Email] Skipping — BREVO_API_KEY not set.');
+        return { success: false, error: 'BREVO_API_KEY not configured.' };
     }
 
-    const transporter = createTransporter();
     const results = [];
 
-    try {
-        for (const recipient of recipients) {
-            const result = await transporter.sendMail({
-                from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-                to: recipient.email,
-                subject,
-                html: htmlContent,
+    for (const recipient of recipients) {
+        try {
+            const response = await fetch(BREVO_API_URL, {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': process.env.BREVO_API_KEY,
+                    'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sender:  { name: FROM_NAME, email: FROM_EMAIL },
+                    to:      [{ email: recipient.email }],
+                    subject,
+                    htmlContent,
+                }),
             });
 
-            console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${result.messageId}`);
-            results.push({ email: recipient.email, success: true, messageId: result.messageId });
+            const data = await response.json();
+
+            if (!response.ok) {
+                const msg = data?.message || `HTTP ${response.status}`;
+                console.error(`❌ [Email] Failed to ${recipient.email}: ${msg}`);
+                results.push({ email: recipient.email, success: false, error: msg });
+            } else {
+                console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${data.messageId}`);
+                results.push({ email: recipient.email, success: true, messageId: data.messageId });
+            }
 
             await new Promise((resolve) => setTimeout(resolve, 100));
+        } catch (err) {
+            console.error(`❌ [Email] Exception for ${recipient.email}: ${err.message}`);
+            results.push({ email: recipient.email, success: false, error: err.message });
         }
-
-        return { success: true, results };
-    } catch (error) {
-        console.error(`❌ [Email] sendBulkEmail failed: ${error.message}`);
-        return { success: false, error: error.message };
     }
+
+    const anySuccess = results.some((r) => r.success);
+    return { success: anySuccess, results };
 };
 
-// ── Announcement email template ───────────────────────────────────────────────
+// ── Announcement template ─────────────────────────────────────────────────────
 export const sendAnnouncementEmail = async (students, announcement) => {
-    const subject = `📢 New Announcement: ${announcement.title}`;
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const subject      = `📢 New Announcement: ${announcement.title}`;
+    const frontendUrl  = process.env.FRONTEND_URL || 'http://localhost:5173';
     const announcementsUrl = `${frontendUrl}/announcements`;
 
     const actionButtonHtml = announcement.actionButton?.label && announcement.actionButton?.url
