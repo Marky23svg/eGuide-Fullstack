@@ -1,25 +1,31 @@
-import * as Brevo from '@getbrevo/brevo';
+import nodemailer from 'nodemailer';
 
-// ── Brevo (formerly Sendinblue) ───────────────────────────────────────────────
-// Free tier: 300 emails/day — no domain ownership required.
-// Sign up at https://app.brevo.com → Profile → SMTP & API → API Keys
-// Set BREVO_API_KEY in your Render environment variables.
+// ── Brevo SMTP Relay ──────────────────────────────────────────────────────────
+// Uses Brevo's SMTP relay — no domain ownership required.
+// Free tier: 300 emails/day.
 //
-// FROM address: use any email you verify in Brevo dashboard
-// (just click the verification link they send you — no DNS needed).
+// Setup:
+//   1. Sign up at https://app.brevo.com (free)
+//   2. Go to Profile → SMTP & API → SMTP tab
+//   3. Copy your SMTP login (your Brevo account email) and generate an SMTP password
+//   4. Verify your sender email under Senders & IP → Senders (just click the link they send)
+//
+// Required env vars:
+//   BREVO_SMTP_USER     → your Brevo account email (e.g. you@gmail.com)
+//   BREVO_SMTP_PASS     → the SMTP password from Brevo dashboard (NOT your login password)
+//   EMAIL_USER          → the verified sender email shown in the "from" field
+//   EMAIL_FROM_NAME     → display name (default: eGuide ICCT)
 
-let apiInstance = null;
-
-const getClient = () => {
-    if (!apiInstance) {
-        if (!process.env.BREVO_API_KEY) {
-            throw new Error('BREVO_API_KEY is not set. Add it to your Render environment variables.');
-        }
-        const defaultClient = Brevo.ApiClient.instance;
-        defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
-        apiInstance = new Brevo.TransactionalEmailsApi();
-    }
-    return apiInstance;
+const createTransporter = () => {
+    return nodemailer.createTransport({
+        host: 'smtp-relay.brevo.com',
+        port: 587,
+        secure: false, // STARTTLS
+        auth: {
+            user: process.env.BREVO_SMTP_USER,
+            pass: process.env.BREVO_SMTP_PASS,
+        },
+    });
 };
 
 const FROM_EMAIL = process.env.EMAIL_USER || 'iccteguide@gmail.com';
@@ -27,47 +33,51 @@ const FROM_NAME  = process.env.EMAIL_FROM_NAME || 'eGuide ICCT';
 
 // ── Startup verification ──────────────────────────────────────────────────────
 export const verifyEmailTransporter = async () => {
-    if (!process.env.BREVO_API_KEY) {
-        console.warn('⚠️  [Email] BREVO_API_KEY not set — emails disabled.');
+    if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
+        console.warn('⚠️  [Email] BREVO_SMTP_USER or BREVO_SMTP_PASS not set — emails disabled.');
         return false;
     }
-    console.log(`✅ [Email] Brevo configured. Sending from: ${FROM_NAME} <${FROM_EMAIL}>`);
-    return true;
+    try {
+        const transporter = createTransporter();
+        await transporter.verify();
+        console.log(`✅ [Email] Brevo SMTP ready — sending as: ${FROM_NAME} <${FROM_EMAIL}>`);
+        return true;
+    } catch (err) {
+        console.error(`❌ [Email] Brevo SMTP verification failed: ${err.message}`);
+        return false;
+    }
 };
 
 // ── Bulk sender ───────────────────────────────────────────────────────────────
 export const sendBulkEmail = async (recipients, subject, htmlContent) => {
-    if (!process.env.BREVO_API_KEY) {
-        console.warn('⚠️  [Email] Skipping — BREVO_API_KEY not configured.');
-        return { success: false, error: 'BREVO_API_KEY not configured.' };
+    if (!process.env.BREVO_SMTP_USER || !process.env.BREVO_SMTP_PASS) {
+        console.warn('⚠️  [Email] Skipping — Brevo SMTP credentials not configured.');
+        return { success: false, error: 'Brevo SMTP credentials not configured.' };
     }
 
-    const client = getClient();
+    const transporter = createTransporter();
     const results = [];
 
-    for (const recipient of recipients) {
-        try {
-            const sendSmtpEmail = new Brevo.SendSmtpEmail();
-            sendSmtpEmail.subject = subject;
-            sendSmtpEmail.htmlContent = htmlContent;
-            sendSmtpEmail.sender = { name: FROM_NAME, email: FROM_EMAIL };
-            sendSmtpEmail.to = [{ email: recipient.email }];
+    try {
+        for (const recipient of recipients) {
+            const result = await transporter.sendMail({
+                from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
+                to: recipient.email,
+                subject,
+                html: htmlContent,
+            });
 
-            const data = await client.sendTransacEmail(sendSmtpEmail);
-            console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${data.messageId}`);
-            results.push({ email: recipient.email, success: true, messageId: data.messageId });
+            console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${result.messageId}`);
+            results.push({ email: recipient.email, success: true, messageId: result.messageId });
 
-            // Small delay to stay within rate limits
             await new Promise((resolve) => setTimeout(resolve, 100));
-        } catch (err) {
-            const msg = err?.response?.body?.message || err.message;
-            console.error(`❌ [Email] Failed to ${recipient.email}: ${msg}`);
-            results.push({ email: recipient.email, success: false, error: msg });
         }
-    }
 
-    const anySuccess = results.some((r) => r.success);
-    return { success: anySuccess, results };
+        return { success: true, results };
+    } catch (error) {
+        console.error(`❌ [Email] sendBulkEmail failed: ${error.message}`);
+        return { success: false, error: error.message };
+    }
 };
 
 // ── Announcement email template ───────────────────────────────────────────────
