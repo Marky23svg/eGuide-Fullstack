@@ -224,7 +224,8 @@ const Chatbot = () => {
                     {/* "View Document" buttons — only for bot messages with requirement sources */}
                     {msg.sender === 'bot' && msg.requirementSources?.length > 0 && (
                       <div className="flex flex-col gap-1.5 mt-2 max-w-[85%]">
-                        {msg.requirementSources.map((src) => (
+                        {/* Deduplicate by id before rendering */}
+                        {[...new Map(msg.requirementSources.map(s => [s.id, s])).values()].map((src) => (
                           <button
                             key={src.id}
                             onClick={() => handleViewDocument(src.id)}

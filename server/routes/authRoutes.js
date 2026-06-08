@@ -23,6 +23,9 @@ const validatePassword = (password) => {
 const signToken = (user) =>
     jwt.sign({ id: user._id, role: user.role }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
 
+// OTP cooldown: 60 seconds between resend attempts (saves email quota)
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+
 const otpEmailHtml = (code, title, bodyText) => `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;border:1px solid #e0e0e0;border-radius:10px;">
         <div style="background-color:#2563eb;padding:10px;text-align:center;border-radius:5px 5px 0 0;">
@@ -58,7 +61,21 @@ router.post('/signup/send-otp', async (req, res) => {
             return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
         }
 
-        // Clean up any stale pending record for this email
+        // Cooldown check — if a pending OTP was sent recently, don't send another
+        const recentPending = await User.findOne({ email, pendingSignup: true });
+        if (recentPending && recentPending.loginOtpExpires) {
+            const sentAt = recentPending.loginOtpExpires.getTime() - 10 * 60 * 1000;
+            const elapsed = Date.now() - sentAt;
+            if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+                const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
+                return res.status(429).json({
+                    success: false,
+                    message: `Please wait ${waitSec} second(s) before requesting another OTP.`,
+                });
+            }
+        }
+
+        // Clean up stale pending record
         await User.findOneAndDelete({ email, pendingSignup: true });
 
         const otp = generateCode();
@@ -74,7 +91,6 @@ router.post('/signup/send-otp', async (req, res) => {
             loginOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
         });
 
-        // Non-blocking — respond immediately, email sends in background
         enqueueEmail(
             [{ email }],
             'Email Verification - eGuide System',
@@ -177,15 +193,28 @@ router.post('/login', async (req, res) => {
 
 // ── Forgot Password ───────────────────────────────────────────────────────────
 
-// Step 1: generate + queue reset code email
+// Step 1: generate + queue reset code (with cooldown to prevent abuse)
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
 
         const user = await User.findOne({ email, pendingSignup: { $ne: true } });
         if (!user) {
-            // Return success anyway to avoid email enumeration
+            // Always return success to prevent email enumeration
             return res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
+        }
+
+        // Cooldown: don't send another code if one was sent within the last 60 seconds
+        if (user.resetCodeExpires) {
+            const sentAt = user.resetCodeExpires.getTime() - 10 * 60 * 1000;
+            const elapsed = Date.now() - sentAt;
+            if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+                const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
+                return res.status(429).json({
+                    success: false,
+                    message: `Please wait ${waitSec} second(s) before requesting another reset code.`,
+                });
+            }
         }
 
         const resetCode = generateCode();
@@ -193,7 +222,6 @@ router.post('/forgot-password', async (req, res) => {
         user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
         await user.save();
 
-        // Non-blocking — respond immediately
         enqueueEmail(
             [{ email }],
             'Password Reset Code - eGuide System',

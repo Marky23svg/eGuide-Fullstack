@@ -73,21 +73,25 @@ router.post('/', protect, adminOnly, async (req, res) => {
         }
 
         const announcement = await Announcement.create({ title, content, category, date, description, fullDetails, requirements, image, actionButton, emailNotification });
-        const students = await User.find({ role: 'student' }).select('email').lean();
         clearCachePrefix('announcements');
         invalidateChatbotCache();
 
-        // Fire-and-forget via queue — response is immediate, email sends in background
-        if (students.length > 0) {
-            enqueueAnnouncementEmail(students, announcement);
-            console.log(`📧 [EmailQueue] Queued announcement email for ${students.length} student(s)`);
+        // Only send emails if admin explicitly enabled email notification
+        if (emailNotification) {
+            const students = await User.find({ role: 'student' }).select('email').lean();
+            if (students.length > 0) {
+                enqueueAnnouncementEmail(students, announcement);
+                console.log(`📧 [EmailQueue] Queued for ${students.length} student(s)`);
+            }
         } else {
-            console.log('📭 No students found to notify');
+            console.log('📭 Email notification disabled for this announcement — no emails sent.');
         }
 
         res.status(201).json({
             success: true,
-            message: 'Announcement created successfully' + (students.length > 0 ? '. Emails will be sent!' : '. No students to notify.'),
+            message: emailNotification
+                ? 'Announcement created. Emails queued for students.'
+                : 'Announcement created (no email notification).',
             data: announcement
         });
     } catch (error) {

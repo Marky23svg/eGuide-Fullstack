@@ -180,8 +180,6 @@ const buildTextSearchQuery = (question) => {
 const isSogQuestion = (question) => {
   return /\b(sog|summary of grades|summary grades|grades summary|grade summary)\b/i.test(question);
 };
-
-// ✅ Check if user is asking for latest/general announcements
 const isLatestAnnouncementQuery = (question) => {
   const text = normalize(question);
   const latestPatterns = [
@@ -593,13 +591,14 @@ export const retrieveChatbotContext = async (question, topK = 4) => {
     const sogCandidates = candidates.filter((item) => sourceMatchesSog(item.source));
     if (sogCandidates.length > 0) {
       candidates = sogCandidates;
+      topK = 1;
+      return {
+        results: candidates.slice(0, 1),
+        correctedInterpretation,
+      };
     }
-    topK = 1;
-    // For SOG queries, corrections are less meaningful — return first result directly
-    return {
-      results: candidates.slice(0, 1),
-      correctedInterpretation,
-    };
+    // SOG term used but NO matching document in DB — fall through to normal ranking
+    // so generateChatbotAnswer can return the "not found" clarification message
   }
 
   // Score gap filtering
@@ -711,7 +710,7 @@ export const generateChatbotAnswer = (question, retrievedSources = []) => {
   const bestScore = retrievedSources[0]?.score || 0;
   if (bestScore < dynamicThreshold) {
     return {
-      text: 'I couldn\'t find information relevant to your question. Please try asking about a specific document, requirement, or announcement. For example: "What are the enrollment requirements?" or "Latest announcements?"',
+      text: 'I couldn\'t find a document or announcement matching your question in the eGuide system.\n\nPlease clarify what you\'re looking for, or check the Documents page manually — it lists all available requirements and procedures.',
       requirementSources: [],
     };
   }
@@ -720,19 +719,30 @@ export const generateChatbotAnswer = (question, retrievedSources = []) => {
   const relevantSources = retrievedSources.filter((item) => item.score >= minRelevantScore);
 
   const isSog = isSogQuestion(question);
-  if (relevantSources.length === 0) return { text: buildGenericResponse(question), requirementSources: [] };
+  if (relevantSources.length === 0) return {
+    text: 'I couldn\'t find a close match for your question. Please check the Documents page or rephrase your question.',
+    requirementSources: [],
+  };
 
   const source = relevantSources[0].source;
 
   if (isSog) {
-    const answer = source.type === 'requirement'
-      ? formatRequirementAnswer(source)
-      : formatAnnouncementAnswer(source);
+    // Only answer if DB actually has a matching document
+    const sogSource = relevantSources.find((item) => sourceMatchesSog(item.source));
+    if (!sogSource) {
+      return {
+        text: 'I couldn\'t find a "Summary of Grades" document in the system yet.\n\nPlease check the Documents page manually or ask your registrar\'s office.',
+        requirementSources: [],
+      };
+    }
+    const answer = sogSource.source.type === 'requirement'
+      ? formatRequirementAnswer(sogSource.source)
+      : formatAnnouncementAnswer(sogSource.source);
 
     return {
-      text: `📝 Summary of Grades (SOG) request information:\n\n${answer}`,
-      requirementSources: source.type === 'requirement'
-        ? [{ id: source.id, title: source.title }]
+      text: `📝 Here's what I found for Summary of Grades:\n\n${answer}`,
+      requirementSources: sogSource.source.type === 'requirement'
+        ? [{ id: sogSource.source.id, title: sogSource.source.title }]
         : [],
     };
   }
@@ -745,13 +755,20 @@ export const generateChatbotAnswer = (question, retrievedSources = []) => {
     )
     .join('\n\n');
 
-  // Collect requirement sources for "View Document" buttons
+  // Deduplicate by id — prevent same document appearing as multiple buttons
+  const seen = new Set();
   const requirementSources = relevantSources
     .filter((item) => item.source.type === 'requirement')
+    .filter((item) => {
+      if (seen.has(item.source.id)) return false;
+      seen.add(item.source.id);
+      return true;
+    })
     .map((item) => ({ id: item.source.id, title: item.source.title }));
 
+  // If we have results but none are requirement-type (all announcements), no buttons
   return {
-    text: `Based on the latest eGuide records, here's what I found:\n\n${sourceLines}\n\nFor full details, use the button below.`,
+    text: `Based on the latest eGuide records, here's what I found:\n\n${sourceLines}${requirementSources.length > 0 ? '\n\nTap a button below to view the full document.' : ''}`,
     requirementSources,
   };
 };
