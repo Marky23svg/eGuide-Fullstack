@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { jsPDF } from 'jspdf'
+import { saved as savedApi } from '../services/api'
 
 const NOTE_STYLES = {
   strict:   { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-600' },
@@ -127,45 +128,60 @@ const downloadPDF = (title, requirements, steps) => {
   doc.save(`${title.replace(/[^a-z0-9]/gi, '_')}_procedure.pdf`)
 }
 
-function DocumentCard({ title, requirements, steps, onProgressChange }) {
+function DocumentCard({ requirementId, title, requirements, steps, initialProgress, onProgressChange }) {
   const storageKey = `doc_progress_${title}`
+  const syncTimerRef = useRef(null)
 
   const reqItems = parseItems(typeof requirements === 'string' ? requirements : requirements.join('\n'))
   const stepItems = parseItems(typeof steps === 'string' ? steps : steps.join('\n'))
   const reqOnly = reqItems.filter(i => i.type === 'item')
   const stepOnly = stepItems.filter(i => i.type === 'item')
 
+  // Priority: server progress → localStorage → all false
+  const getInitialChecked = () => {
+    if (initialProgress?.steps) return initialProgress.steps
+    const ls = localStorage.getItem(storageKey)
+    if (ls) return JSON.parse(ls).steps || stepOnly.map(() => false)
+    return stepOnly.map(() => false)
+  }
+
+  const getInitialReqChecked = () => {
+    if (initialProgress?.reqs) return initialProgress.reqs
+    const ls = localStorage.getItem(storageKey)
+    if (ls) return JSON.parse(ls).reqs || reqOnly.map(() => false)
+    return reqOnly.map(() => false)
+  }
+
   const [open, setOpen] = useState(false)
-  const [checked, setChecked] = useState(() => {
-    const saved = localStorage.getItem(storageKey)
-    return saved ? JSON.parse(saved).steps : stepOnly.map(() => false)
-  })
-  const [reqChecked, setReqChecked] = useState(() => {
-    const saved = localStorage.getItem(storageKey)
-    return saved ? JSON.parse(saved).reqs : reqOnly.map(() => false)
-  })
+  const [checked, setChecked] = useState(getInitialChecked)
+  const [reqChecked, setReqChecked] = useState(getInitialReqChecked)
 
-  const completedCount = checked.filter(Boolean).length
-  const reqCompletedCount = reqChecked.filter(Boolean).length
-  const allDone = reqCompletedCount === reqOnly.length && completedCount === stepOnly.length
-  const reqPct = reqOnly.length ? (reqCompletedCount / reqOnly.length) * 100 : 0
-  const stepPct = stepOnly.length ? (completedCount / stepOnly.length) * 100 : 0
+  // Sync to server + localStorage — debounced 500ms to avoid spamming on rapid clicks
+  const syncProgress = (newSteps, newReqs) => {
+    const progress = { steps: newSteps, reqs: newReqs }
+    // Always keep localStorage as instant local fallback
+    localStorage.setItem(storageKey, JSON.stringify(progress))
+    onProgressChange?.(title, newSteps.filter(Boolean).length / (stepOnly.length || 1))
 
-  const save = (newSteps, newReqs) => {
-    localStorage.setItem(storageKey, JSON.stringify({ steps: newSteps, reqs: newReqs }))
-    onProgressChange?.(title, newSteps.filter(Boolean).length / stepOnly.length)
+    if (!requirementId) return
+    clearTimeout(syncTimerRef.current)
+    syncTimerRef.current = setTimeout(() => {
+      savedApi.updateProgress(requirementId, progress).catch(() => {
+        // Silent fail — localStorage already saved
+      })
+    }, 500)
   }
 
   const toggleStep = (i) => {
     const updated = checked.map((v, idx) => idx === i ? !v : v)
     setChecked(updated)
-    save(updated, reqChecked)
+    syncProgress(updated, reqChecked)
   }
 
   const toggleReq = (i) => {
     const updated = reqChecked.map((v, idx) => idx === i ? !v : v)
     setReqChecked(updated)
-    save(checked, updated)
+    syncProgress(checked, updated)
   }
 
   const handleRetake = () => {
@@ -175,7 +191,16 @@ function DocumentCard({ title, requirements, steps, onProgressChange }) {
     setReqChecked(emptyReqs)
     localStorage.removeItem(storageKey)
     onProgressChange?.(title, 0)
+    if (requirementId) {
+      savedApi.updateProgress(requirementId, { steps: emptySteps, reqs: emptyReqs }).catch(() => {})
+    }
   }
+
+  const completedCount = checked.filter(Boolean).length
+  const reqCompletedCount = reqChecked.filter(Boolean).length
+  const allDone = reqCompletedCount === reqOnly.length && completedCount === stepOnly.length
+  const reqPct = reqOnly.length ? (reqCompletedCount / reqOnly.length) * 100 : 0
+  const stepPct = stepOnly.length ? (completedCount / stepOnly.length) * 100 : 0
 
   return (
     <>

@@ -106,6 +106,31 @@ router.delete('/:requirementId', protect, async (req, res) => {
     }
 });
 
+// Update progress for a saved requirement
+// Auto-creates the saved record if it doesn't exist yet (first checkbox tick = auto-save)
+router.put('/:requirementId/progress', protect, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { requirementId } = req.params;
+        const { progress } = req.body; // { steps: [bool,...], reqs: [bool,...] }
+
+        if (!progress || typeof progress !== 'object') {
+            return res.status(400).json({ success: false, message: 'Progress data is required.' });
+        }
+
+        // Upsert — create saved record if it doesn't exist, then update progress
+        const saved = await SavedRequirement.findOneAndUpdate(
+            { user_id: userId, requirement_id: requirementId },
+            { $set: { progress }, $setOnInsert: { date_saved: new Date() } },
+            { upsert: true, new: true }
+        );
+
+        res.json({ success: true, data: saved });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Check if a requirement is saved by the student
 router.get('/check/:requirementId', protect, async (req, res) => {
     try {

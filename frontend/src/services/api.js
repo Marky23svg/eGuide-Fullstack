@@ -83,6 +83,7 @@ export const saved = {
     getAll: () => API.get('/saved'),
     check: (requirementId) => API.get(`/saved/check/${requirementId}`),
     unsave: (requirementId) => API.delete(`/saved/${requirementId}`),
+    updateProgress: (requirementId, progress) => API.put(`/saved/${requirementId}/progress`, { progress }),
 };
 
 export default API;

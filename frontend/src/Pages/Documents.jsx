@@ -5,6 +5,7 @@ import Footer from '../components/Footer'
 import DocumentCard from '../components/DocumentCard'
 import requirementBg from '../assets/Requirement_bg.webp'
 import API from '../services/api'
+import { saved as savedApi } from '../services/api'
 import { MdSearch, MdSort } from 'react-icons/md'
 
 function Documents() {
@@ -13,30 +14,50 @@ function Documents() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [progressMap, setProgressMap] = useState({})
+  const [serverProgress, setServerProgress] = useState({}) // requirementId → progress object
   const [highlightId, setHighlightId] = useState(null)
 
   const [searchParams] = useSearchParams()
   const cardRefs = useRef({})
 
   useEffect(() => {
-    API.get('/requirements')
-      .then(res => {
-        setRequirements(res.data)
-        const map = {}
-        res.data.forEach(item => {
+    Promise.all([
+      API.get('/requirements'),
+      savedApi.getAll().catch(() => ({ data: [] })), // graceful fallback if not logged in
+    ]).then(([reqRes, savedRes]) => {
+      setRequirements(reqRes.data)
+
+      // Build a map of requirementId → saved progress from the server
+      const progMap = {}
+      const savedList = savedRes.data || []
+      savedList.forEach(item => {
+        const rid = item.requirement_id?._id || item.requirement_id
+        if (rid && item.progress) progMap[rid.toString()] = item.progress
+      })
+      setServerProgress(progMap)
+
+      // Seed progressMap for sorting (prefer server progress, fall back to localStorage)
+      const map = {}
+      reqRes.data.forEach(item => {
+        const serverProg = progMap[item._id]
+        if (serverProg) {
+          const stepLen = serverProg.steps?.length || 1
+          map[item.title] = serverProg.steps?.filter(Boolean).length / stepLen
+        } else {
           const steps = item.procedure.split('\n').filter(s => s.trim())
-          const saved = localStorage.getItem(`doc_progress_${item.title}`)
-          if (saved && steps.length) {
-            const { steps: s } = JSON.parse(saved)
+          const ls = localStorage.getItem(`doc_progress_${item.title}`)
+          if (ls && steps.length) {
+            const { steps: s } = JSON.parse(ls)
             map[item.title] = s ? s.filter(Boolean).length / steps.length : 0
           } else {
             map[item.title] = 0
           }
-        })
-        setProgressMap(map)
+        }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      setProgressMap(map)
+    })
+    .catch(() => {})
+    .finally(() => setLoading(false))
   }, [])
 
   // After data loads, scroll to + highlight the card specified in ?highlight=<id>
@@ -153,9 +174,12 @@ function Documents() {
                 }`}
               >
                 <DocumentCard
+                  key={item._id}
+                  requirementId={item._id}
                   title={item.title}
                   requirements={item.requirements.split('\n').filter(s => s.trim())}
                   steps={item.procedure.split('\n').filter(s => s.trim())}
+                  initialProgress={serverProgress[item._id] || null}
                   onProgressChange={handleProgressChange}
                 />
               </div>

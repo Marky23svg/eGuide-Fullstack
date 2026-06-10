@@ -14,10 +14,15 @@ const savedRequirementSchema = new mongoose.Schema({
     date_saved: {
         type: Date,
         default: Date.now
+    },
+    // Stores checkbox progress: { steps: [bool,...], reqs: [bool,...] }
+    progress: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
     }
 });
 
-// Prevent duplicate saves (same user cannot save same requirement twice)
+// Prevent duplicate saves
 savedRequirementSchema.index({ user_id: 1, requirement_id: 1 }, { unique: true });
 
 const SavedRequirement = mongoose.model('SavedRequirement', savedRequirementSchema);
