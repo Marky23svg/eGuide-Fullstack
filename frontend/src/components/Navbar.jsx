@@ -177,6 +177,18 @@ function Navbar() {
 
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
+  // Close profile on outside click
+  useEffect(() => {
+    if (!profileOpen) return
+    const handleClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [profileOpen])
+
   // Close mobile menu on scroll
   useEffect(() => {
     if (!mobileMenuOpen) return
