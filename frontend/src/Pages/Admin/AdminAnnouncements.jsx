@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import AdminLayout from './AdminLayout'
-import { MdImage, MdUpload, MdClose, MdVisibility, MdEdit, MdCheckCircle, MdMail } from 'react-icons/md'
+import { MdImage, MdUpload, MdClose, MdVisibility, MdEdit, MdCheckCircle, MdMail, MdSearch } from 'react-icons/md'
 import { announcements as announcementsAPI, uploadImage } from '../../services/api'
 
 const EMPTY_FORM = {
@@ -73,6 +73,7 @@ function ConfirmModal({ title, message, onConfirm, onCancel }) {
 
 function AdminAnnouncements() {
   const [announcements, setAnnouncements] = useState([])
+  const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -184,6 +185,7 @@ function AdminAnnouncements() {
   const triggerFileInput = useCallback(() => fileInputRef.current.click(), [])
 
   const previewRequirements = form.requirements.split('\n').filter(r => r.trim())
+  const filteredAnnouncements = announcements.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
 
   return (
     <AdminLayout activePage="Announcements">
@@ -197,7 +199,7 @@ function AdminAnnouncements() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-400">{announcements.length} announcements</p>
         <button
           onClick={openAdd}
@@ -205,6 +207,18 @@ function AdminAnnouncements() {
         >
           + Add Announcement
         </button>
+      </div>
+
+      {/* Search */}
+      <div className="relative mb-4">
+        <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search announcements..."
+          className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+        />
       </div>
 
       {/* Table */}
@@ -221,7 +235,13 @@ function AdminAnnouncements() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {announcements.map((item) => (
+              {filteredAnnouncements.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-300">
+                    {search ? `No announcements found for "${search}"` : 'No announcements yet'}
+                  </td>
+                </tr>
+              ) : filteredAnnouncements.map((item) => (
                 <tr key={item._id} className="hover:bg-gray-50 transition">
                   <td className="px-6 py-4 font-medium text-gray-800 max-w-[200px] truncate">{item.title}</td>
                   <td className="px-6 py-4 text-gray-500 max-w-[250px] truncate">{item.content}</td>

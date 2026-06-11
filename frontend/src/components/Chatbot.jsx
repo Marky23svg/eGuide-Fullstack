@@ -78,7 +78,10 @@ const Chatbot = () => {
 
   const handleViewDocument = (requirementId) => {
     setIsOpen(false);
-    navigate(`/requirements?highlight=${requirementId}`);
+    navigate(`/requirements?highlight=${requirementId}`, {
+      state: { highlightId: requirementId },
+      replace: false,
+    });
   };
 
   return (
@@ -88,6 +91,7 @@ const Chatbot = () => {
         {!isOpen && (
           <motion.button
             key="chatbot-icon"
+            type="button"
             onClick={() => setIsOpen(true)}
             aria-label="Open chat"
             initial={{ opacity: 0, scale: 0.8 }}
@@ -184,7 +188,7 @@ const Chatbot = () => {
                     <span className="text-green-300 font-medium drop-shadow-[0_0_3px_#22c55e]">Always Online</span>
                   </div>
                 </div>
-                <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close chat">
+                <button type="button" onClick={() => setIsOpen(false)} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close chat">
                   <CgClose className="text-xl" />
                 </button>
               </div>
@@ -224,10 +228,11 @@ const Chatbot = () => {
                     {/* "View Document" buttons — only for bot messages with requirement sources */}
                     {msg.sender === 'bot' && msg.requirementSources?.length > 0 && (
                       <div className="flex flex-col gap-1.5 mt-2 max-w-[85%]">
-                        {/* Deduplicate by id before rendering */}
-                        {[...new Map(msg.requirementSources.map(s => [s.id, s])).values()].map((src) => (
+                        {/* Deduplicate by title before rendering */}
+                        {[...new Map(msg.requirementSources.map((s) => [s.title.trim().toLowerCase(), s])).values()].map((src) => (
                           <button
-                            key={src.id}
+                            key={`${src.id}-${src.title}`}
+                            type="button"
                             onClick={() => handleViewDocument(src.id)}
                             className="flex items-center gap-2 px-3 py-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
                           >

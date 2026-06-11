@@ -129,7 +129,18 @@ const downloadPDF = (title, requirements, steps) => {
 }
 
 function DocumentCard({ requirementId, title, requirements, steps, initialProgress, onProgressChange }) {
-  const storageKey = `doc_progress_${title}`
+  const getUserId = () => {
+    try {
+      const raw = localStorage.getItem('user')
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      return parsed?.id || parsed?._id || null
+    } catch {
+      return null
+    }
+  }
+
+  const storageKey = `doc_progress_${getUserId() || 'anon'}_${title}`
   const syncTimerRef = useRef(null)
 
   const reqItems = parseItems(typeof requirements === 'string' ? requirements : requirements.join('\n'))

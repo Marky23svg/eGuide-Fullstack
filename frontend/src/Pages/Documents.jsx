@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useLocation } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import DocumentCard from '../components/DocumentCard'
@@ -16,20 +16,35 @@ function Documents() {
   const [progressMap, setProgressMap] = useState({})
   const [serverProgress, setServerProgress] = useState({}) // requirementId → progress object
   const [highlightId, setHighlightId] = useState(null)
+  const [highlightMessage, setHighlightMessage] = useState('')
+
+  const getUserId = () => {
+    try {
+      const raw = localStorage.getItem('user')
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      return parsed?.id || parsed?._id || null
+    } catch {
+      return null
+    }
+  }
+  const makeProgressKey = (title) => `doc_progress_${getUserId() || 'anon'}_${title}`
 
   const [searchParams] = useSearchParams()
+  const location = useLocation()
   const cardRefs = useRef({})
 
   useEffect(() => {
     Promise.all([
-      API.get('/requirements'),
+      API.get('/requirements?limit=100'),
       savedApi.getAll().catch(() => ({ data: [] })), // graceful fallback if not logged in
     ]).then(([reqRes, savedRes]) => {
-      setRequirements(reqRes.data)
+      const requirementsList = reqRes.data || reqRes || []
+      setRequirements(requirementsList)
 
       // Build a map of requirementId → saved progress from the server
       const progMap = {}
-      const savedList = savedRes.data || []
+      const savedList = savedRes.data || savedRes || []
       savedList.forEach(item => {
         const rid = item.requirement_id?._id || item.requirement_id
         if (rid && item.progress) progMap[rid.toString()] = item.progress
@@ -38,14 +53,14 @@ function Documents() {
 
       // Seed progressMap for sorting (prefer server progress, fall back to localStorage)
       const map = {}
-      reqRes.data.forEach(item => {
+      requirementsList.forEach(item => {
         const serverProg = progMap[item._id]
         if (serverProg) {
           const stepLen = serverProg.steps?.length || 1
           map[item.title] = serverProg.steps?.filter(Boolean).length / stepLen
         } else {
-          const steps = item.procedure.split('\n').filter(s => s.trim())
-          const ls = localStorage.getItem(`doc_progress_${item.title}`)
+          const steps = (item.procedure || '').split('\n').filter(s => s.trim())
+          const ls = localStorage.getItem(makeProgressKey(item.title))
           if (ls && steps.length) {
             const { steps: s } = JSON.parse(ls)
             map[item.title] = s ? s.filter(Boolean).length / steps.length : 0
@@ -62,10 +77,13 @@ function Documents() {
 
   // After data loads, scroll to + highlight the card specified in ?highlight=<id>
   useEffect(() => {
-    const id = searchParams.get('highlight')
+    const queryId = searchParams.get('highlight')
+    const stateId = location.state?.highlightId
+    const id = queryId || stateId
     if (!id || loading) return
 
     setHighlightId(id)
+    setHighlightMessage('Opened document from the chatbot')
 
     // Small delay to let the grid render
     const timer = setTimeout(() => {
@@ -78,19 +96,24 @@ function Documents() {
       return () => clearTimeout(clearTimer)
     }, 200)
 
-    return () => clearTimeout(timer)
-  }, [loading, searchParams])
+    const messageTimer = setTimeout(() => setHighlightMessage(''), 3000)
+
+    return () => {
+      clearTimeout(timer)
+      clearTimeout(messageTimer)
+    }
+  }, [loading, searchParams, location.state])
 
   const handleProgressChange = (title, ratio) => {
     setProgressMap(prev => ({ ...prev, [title]: ratio }))
   }
 
   const getScore = (item) => {
-    const saved = localStorage.getItem(`doc_progress_${item.title}`)
+    const saved = localStorage.getItem(makeProgressKey(item.title))
     if (!saved) return progressMap[item.title] ?? 0
     const { steps: s, reqs: r } = JSON.parse(saved)
-    const stepLen = item.procedure.split('\n').filter(x => x.trim()).length
-    const reqLen = item.requirements.split('\n').filter(x => x.trim()).length
+    const stepLen = (item.procedure || '').split('\n').filter(x => x.trim()).length
+    const reqLen = (item.requirements || '').split('\n').filter(x => x.trim()).length
     const stepRatio = s && stepLen ? s.filter(Boolean).length / stepLen : 0
     const reqRatio = r && reqLen ? r.filter(Boolean).length / reqLen : 0
     return stepRatio + reqRatio * 0.01
@@ -152,6 +175,14 @@ function Documents() {
           </select>
         </div>
       </div>
+
+      {highlightMessage && (
+        <div className="max-w-6xl mx-auto px-8 py-4">
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 text-sm shadow-sm">
+            {highlightMessage}
+          </div>
+        </div>
+      )}
 
       {/* Cards Grid */}
       <div className="max-w-6xl mx-auto px-8 py-6">

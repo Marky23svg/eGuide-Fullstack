@@ -122,7 +122,7 @@ router.put('/:requirementId/progress', protect, async (req, res) => {
         const saved = await SavedRequirement.findOneAndUpdate(
             { user_id: userId, requirement_id: requirementId },
             { $set: { progress }, $setOnInsert: { date_saved: new Date() } },
-            { upsert: true, new: true }
+            { upsert: true, returnDocument: 'after' }
         );
 
         res.json({ success: true, data: saved });

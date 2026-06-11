@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import AdminLayout from './AdminLayout'
-import { MdClose, MdEdit, MdVisibility, MdAdd } from 'react-icons/md'
+import { MdClose, MdEdit, MdVisibility, MdAdd, MdSearch } from 'react-icons/md'
 import API from '../../services/api'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -324,6 +324,7 @@ const EMPTY_ITEMS = []
 
 function AdminDocuments() {
   const [requirements, setRequirements] = useState([])
+  const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [title, setTitle] = useState('')
@@ -336,7 +337,7 @@ function AdminDocuments() {
 
   const fetchRequirements = useCallback(async () => {
     try {
-      const res = await API.get('/requirements')
+      const res = await API.get('/requirements?limit=100')
       setRequirements(Array.isArray(res) ? res : (res.data ?? []))
     } catch {
       setError('Failed to load requirements')
@@ -412,34 +413,55 @@ function AdminDocuments() {
     <AdminLayout activePage="Documents">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-400">{requirements.length} documents</p>
         <button onClick={openAdd} className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition">
           + Add Document
         </button>
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4">
+        <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search documents..."
+          className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+        />
+      </div>
+
       {/* List */}
-      <div className="flex flex-col gap-4">
-        {requirements.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-8 text-center text-sm text-gray-300">
-            No documents yet
-          </div>
-        ) : requirements.map((item) => (
-            <div key={item._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
-                  <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-4">
-                  <button onClick={() => openEdit(item)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 transition">Edit</button>
-                  <button onClick={() => setDeleteConfirm(item._id)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-500 transition">Delete</button>
+      {(() => {
+        const filtered = requirements.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
+        return (
+          <div className="flex flex-col gap-4">
+            {requirements.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-8 text-center text-sm text-gray-300">
+                No documents yet
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-8 text-center text-sm text-gray-300">
+                No documents found for "{search}"
+              </div>
+            ) : filtered.map((item) => (
+              <div key={item._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-4">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-bold text-gray-800 truncate">{item.title}</h3>
+                    <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <button onClick={() => openEdit(item)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-blue-50 hover:text-blue-600 transition">Edit</button>
+                    <button onClick={() => setDeleteConfirm(item._id)} className="text-xs px-3 py-1 rounded-lg bg-gray-100 hover:bg-red-50 hover:text-red-500 transition">Delete</button>
+                  </div>
                 </div>
               </div>
-            </div>
-        ))}
-      </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* Add / Edit Modal */}
       {showModal && (

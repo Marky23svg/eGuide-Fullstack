@@ -1,9 +1,3 @@
-// Load .env for local development.
-// On Render, env vars are injected by the platform — dotenv is a no-op when
-// the file doesn't exist (using { processEnv: process.env } keeps it safe).
-import dotenv from 'dotenv';
-dotenv.config(); // silently skipped if .env is missing
-
 import './config/config.js'; // ← validates all required env vars at startup
 
 import express from 'express';
@@ -20,8 +14,6 @@ import chatbotRoutes from './routes/chatbotRoutes.js';
 import saveRoutes from './routes/saveRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
-
-require('dotenv').config();
 
 const app = express();
 

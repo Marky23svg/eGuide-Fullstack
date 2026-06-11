@@ -22,7 +22,7 @@ function AdminDashboard() {
         ])
         setCounts({
           announcements: ann.count ?? ann.data?.length ?? '—',
-          requirements: req.count ?? req.data?.length ?? '—',
+          requirements: req.total ?? req.count ?? req.data?.length ?? '—',
           students: users.count ?? '—',
         })
         setRecentAnnouncements((ann.data || []).slice(0, 3))

@@ -46,6 +46,15 @@ function Login() {
   const [forgotSuccess, setForgotSuccess] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
 
+  const getApiErrorMessage = (error, fallback = 'Unable to connect to the server. Please try again.') => {
+    if (!error) return fallback
+    if (typeof error === 'string') return error
+    if (error.message) return error.message
+    if (error?.data?.message) return error.data.message
+    if (error?.response?.data?.message) return error.response.data.message
+    return fallback
+  }
+
   // Login — direct, no OTP
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -63,7 +72,7 @@ function Login() {
         }
       }
     } catch (error) {
-      setLoginError(error.message || 'Login failed. Please try again.')
+      setLoginError(getApiErrorMessage(error, 'Login failed. Please check your credentials or try again.'))
     } finally {
       setLoginLoading(false)
     }
@@ -92,7 +101,7 @@ function Login() {
         setSignupStep('otp')
       }
     } catch (error) {
-      setSignupError(error.message || 'Signup failed. Email may already exist.')
+      setSignupError(getApiErrorMessage(error, 'Signup failed. Email may already exist.'))
     } finally {
       setSignupLoading(false)
     }
@@ -114,7 +123,7 @@ function Login() {
         navigate('/home')
       }
     } catch (error) {
-      setSignupError(error.message || 'Invalid or expired OTP.')
+      setSignupError(getApiErrorMessage(error, 'Invalid or expired OTP.'))
     } finally {
       setSignupLoading(false)
     }
@@ -131,7 +140,7 @@ function Login() {
       setForgotSuccess('Reset code sent! Check your email.')
       setForgotStep('code')
     } catch (error) {
-      setForgotError(error.message || 'No account found with this email')
+      setForgotError(getApiErrorMessage(error, 'No account found with this email'))
     } finally {
       setForgotLoading(false)
     }
@@ -154,7 +163,7 @@ function Login() {
       }
     } catch (error) {
       console.log('Verify error full:', JSON.stringify(error))
-      setForgotError(error.message || 'Invalid or expired reset code')
+      setForgotError(getApiErrorMessage(error, 'Invalid or expired reset code'))
     } finally {
       setForgotLoading(false)
     }
@@ -177,7 +186,7 @@ function Login() {
       setForgotStep('email')
       setSignupSuccess('Password reset successfully! Please log in.')
     } catch (error) {
-      setForgotError(error.message || 'Failed to reset password')
+      setForgotError(getApiErrorMessage(error, 'Failed to reset password'))
     } finally {
       setForgotLoading(false)
     }
