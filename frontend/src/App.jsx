@@ -28,6 +28,7 @@ import AdminDashboard from './Pages/Admin/AdminDashboard'
 import AdminAnnouncements from './Pages/Admin/AdminAnnouncements'
 import AdminDocuments from './Pages/Admin/AdminDocuments'
 import SessionExpiredModal from './components/SessionExpiredModal'
+import { getToken, getUser, clearAuth } from './utils/authStorage'
 
 // Session timeout: 30 minutes of inactivity
 const SESSION_TIMEOUT = 30 * 60 * 1000
@@ -38,8 +39,7 @@ function useSessionTimeout() {
   const [sessionExpired, setSessionExpired] = useState(false)
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    clearAuth()
     setSessionExpired(true)
   }, [])
 
@@ -53,7 +53,7 @@ function useSessionTimeout() {
   }, [navigate])
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     if (!token) return
 
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click']
@@ -83,16 +83,8 @@ function SessionManager({ children }) {
     </>
   )
 }
-const getUser = () => {
-  try {
-    const raw = localStorage.getItem('user')
-    if (!raw || raw === 'undefined' || raw === 'null') return {}
-    return JSON.parse(raw)
-  } catch { return {} }
-}
-
 function AdminRoute({ children }) {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   const user = getUser()
   if (!token) return <Navigate to="/" replace />
   if (user.role !== 'admin') return <Navigate to="/home" replace />
@@ -100,7 +92,7 @@ function AdminRoute({ children }) {
 }
 
 function StudentRoute({ children }) {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   const user = getUser()
   if (!token) return <Navigate to="/" replace />
   if (user.role === 'admin') return <Navigate to="/admin" replace />
@@ -109,7 +101,7 @@ function StudentRoute({ children }) {
 
 // Public route — redirects already-logged-in users to their dashboard
 function PublicRoute({ children }) {
-  const token = localStorage.getItem('token')
+  const token = getToken()
   const user = getUser()
   if (!token) return <>{children}</>
   return user.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/home" replace />

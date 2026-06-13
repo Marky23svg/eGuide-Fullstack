@@ -6,7 +6,7 @@ import DocumentCard from '../components/DocumentCard'
 import requirementBg from '../assets/Requirement_bg.webp'
 import API from '../services/api'
 import { saved as savedApi } from '../services/api'
-import { MdSearch, MdSort } from 'react-icons/md'
+import { getUser } from '../utils/authStorage'
 
 function Documents() {
   const [requirements, setRequirements] = useState([])
@@ -19,14 +19,8 @@ function Documents() {
   const [highlightMessage, setHighlightMessage] = useState('')
 
   const getUserId = () => {
-    try {
-      const raw = localStorage.getItem('user')
-      if (!raw) return null
-      const parsed = JSON.parse(raw)
-      return parsed?.id || parsed?._id || null
-    } catch {
-      return null
-    }
+    const parsed = getUser()
+    return parsed?.id || parsed?._id || null
   }
   const makeProgressKey = (title) => `doc_progress_${getUserId() || 'anon'}_${title}`
 

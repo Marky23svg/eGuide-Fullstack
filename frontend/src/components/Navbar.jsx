@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut } from 'react-icons/fi'
+import { getUser, clearAuth } from '../utils/authStorage'
 
 // ─── STYLES ──────────────────────────────────────────────────
 const NAV_TEXT_STYLE = {
@@ -167,8 +168,7 @@ function Navbar() {
   const profileOpenRef = useRef(false)
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    clearAuth()
     navigate('/')
   }
 
@@ -287,7 +287,7 @@ function Navbar() {
     transition: CARD_TRANSITION,
   }
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = getUser()
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
   const userInitial = (userName.charAt(0) || 'U').toUpperCase()
@@ -400,7 +400,7 @@ function Navbar() {
 }
 
 function CardContent({ profileOpen, onLogout, onClose }) {
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const user = getUser()
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
   const userInitial = (userName.charAt(0) || 'U').toUpperCase()

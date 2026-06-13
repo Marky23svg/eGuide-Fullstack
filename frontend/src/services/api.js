@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, clearAuth } from '../utils/authStorage';
 
 const RAW_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 // Guard: ensure the base URL always ends with /api
@@ -18,7 +19,7 @@ const API = axios.create({
 // Auto-add token to every request
 API.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -37,8 +38,7 @@ API.interceptors.response.use(
 
         // Only redirect for 401 errors on NON-auth endpoints
         if (error.response?.status === 401 && !isAuthRequest) {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            clearAuth();
             if (window.location.pathname !== '/') {
                 window.location.href = '/';
             }

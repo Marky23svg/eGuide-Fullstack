@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { jsPDF } from 'jspdf'
 import { saved as savedApi } from '../services/api'
+import { getUser } from '../utils/authStorage'
 
 const NOTE_STYLES = {
   strict:   { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-600' },
@@ -130,14 +131,8 @@ const downloadPDF = (title, requirements, steps) => {
 
 function DocumentCard({ requirementId, title, requirements, steps, initialProgress, onProgressChange }) {
   const getUserId = () => {
-    try {
-      const raw = localStorage.getItem('user')
-      if (!raw) return null
-      const parsed = JSON.parse(raw)
-      return parsed?.id || parsed?._id || null
-    } catch {
-      return null
-    }
+    const parsed = getUser()
+    return parsed?.id || parsed?._id || null
   }
 
   const storageKey = `doc_progress_${getUserId() || 'anon'}_${title}`

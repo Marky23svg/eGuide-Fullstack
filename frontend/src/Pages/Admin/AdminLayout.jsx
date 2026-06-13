@@ -6,6 +6,7 @@ import {
   MdChevronLeft, MdChevronRight,
   MdLogout, MdMenu, MdClose,
 } from 'react-icons/md'
+import { clearAuth } from '../../utils/authStorage'
 
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: MdDashboard,  path: '/admin' },
@@ -83,7 +84,7 @@ function AdminLayout({ children, activePage }) {
         {/* Bottom actions */}
         <div className="p-2 border-t border-white/10 flex flex-col gap-1">
           <button
-            onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/') }}
+            onClick={() => { clearAuth(); navigate('/') }}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400 hover:bg-red-500/10 transition"
           >
             <MdLogout size={18} className="shrink-0" />

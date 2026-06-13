@@ -7,18 +7,26 @@ import { enqueueEmail } from '../utils/emailQueue.js';
 
 const router = express.Router();
 
-const MIN_PASSWORD_LENGTH = 8;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
-
 const validatePassword = (password) => {
-    if (!password || password.length < MIN_PASSWORD_LENGTH) {
-        return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+    if (!password || password.length < 8) {
+        return 'Password must be at least 8 characters long.';
+    }
+    if (!/[A-Z]/.test(password)) {
+        return 'Password must contain at least one uppercase letter.';
+    }
+    if (!/[a-z]/.test(password)) {
+        return 'Password must contain at least one lowercase letter.';
+    }
+    if (!/[0-9]/.test(password)) {
+        return 'Password must contain at least one number.';
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+        return 'Password must contain at least one special character.';
     }
     return null;
 };
+
+const generateCode = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 const signToken = (user) =>
     jwt.sign({ id: user._id, role: user.role }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
@@ -44,7 +52,7 @@ const otpEmailHtml = (code, title, bodyText) => `
 
 // ── Signup ────────────────────────────────────────────────────────────────────
 
-// Step 1: validate + create pending user + queue OTP email
+// Step 1: validate + return signed signup session token + queue OTP email
 router.post('/signup/send-otp', async (req, res) => {
     try {
         const { name, email, password } = req.body;
@@ -61,35 +69,15 @@ router.post('/signup/send-otp', async (req, res) => {
             return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
         }
 
-        // Cooldown check — if a pending OTP was sent recently, don't send another
-        const recentPending = await User.findOne({ email, pendingSignup: true });
-        if (recentPending && recentPending.loginOtpExpires) {
-            const sentAt = recentPending.loginOtpExpires.getTime() - 10 * 60 * 1000;
-            const elapsed = Date.now() - sentAt;
-            if (elapsed < OTP_RESEND_COOLDOWN_MS) {
-                const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
-                return res.status(429).json({
-                    success: false,
-                    message: `Please wait ${waitSec} second(s) before requesting another OTP.`,
-                });
-            }
-        }
-
-        // Clean up stale pending record
-        await User.findOneAndDelete({ email, pendingSignup: true });
-
         const otp = generateCode();
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: 'student',
-            pendingSignup: true,
-            loginOtp: otp,
-            loginOtpExpires: new Date(Date.now() + 10 * 60 * 1000),
-        });
+        // Stateless token containing registration details and OTP, expires in 10 minutes
+        const signupToken = jwt.sign(
+            { name, email, password: hashedPassword, otp },
+            config.jwtSecret,
+            { expiresIn: '10m' }
+        );
 
         enqueueEmail(
             [{ email }],
@@ -97,32 +85,47 @@ router.post('/signup/send-otp', async (req, res) => {
             otpEmailHtml(otp, 'Verify Your Email', 'Use this code to complete your registration. It expires in <strong>10 minutes</strong>.')
         );
 
-        res.json({ success: true, message: 'OTP sent to your email.' });
+        res.json({ success: true, signupToken, message: 'OTP sent to your email.' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 });
 
-// Step 2: verify OTP and activate account
+// Step 2: verify OTP and activate account (finally create in DB)
 router.post('/signup/verify-otp', async (req, res) => {
     try {
-        const { email, otp } = req.body;
+        const { email, otp, signupToken } = req.body;
 
-        const user = await User.findOne({
-            email,
-            pendingSignup: true,
-            loginOtp: otp,
-            loginOtpExpires: { $gt: new Date() },
-        });
-
-        if (!user) {
-            return res.status(400).json({ success: false, message: 'Invalid or expired OTP.' });
+        if (!signupToken) {
+            return res.status(400).json({ success: false, message: 'Registration session is missing.' });
         }
 
-        user.pendingSignup = false;
-        user.loginOtp = null;
-        user.loginOtpExpires = null;
-        await user.save();
+        let decoded;
+        try {
+            decoded = jwt.verify(signupToken, config.jwtSecret);
+        } catch (err) {
+            return res.status(400).json({ success: false, message: 'Invalid or expired registration session.' });
+        }
+
+        if (decoded.email.toLowerCase() !== email.toLowerCase() || decoded.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP or email.' });
+        }
+
+        // Final check to prevent race conditions or duplicate signups
+        const existingUser = await User.findOne({ email, pendingSignup: { $ne: true } });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+        }
+
+        // Clean up any stale legacy pending records if they exist
+        await User.findOneAndDelete({ email, pendingSignup: true });
+
+        const user = await User.create({
+            name: decoded.name,
+            email: decoded.email,
+            password: decoded.password, // already hashed
+            role: 'student',
+        });
 
         const token = signToken(user);
 

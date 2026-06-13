@@ -3,7 +3,27 @@ import { useNavigate } from 'react-router-dom'
 import loginBg from '../assets/Login_bg.webp'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
 import API from '../services/api'
+import { setAuth } from '../utils/authStorage'
 import { motion } from "motion/react";
+
+const validatePasswordStrength = (password) => {
+  if (!password || password.length < 8) {
+    return 'Password must be at least 8 characters long.';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter.';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter.';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number.';
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return 'Password must contain at least one special character.';
+  }
+  return null;
+};
 
 function Login() {
   const navigate = useNavigate()
@@ -14,10 +34,6 @@ function Login() {
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false)
-  const [showRegPassword, setShowRegPassword] = useState(false)
-  const [showRegConfirm, setShowRegConfirm] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false)
 
   // Login form states
   const [email, setEmail] = useState('')
@@ -29,6 +45,7 @@ function Login() {
   const [regPassword, setRegPassword] = useState('')
   const [regConfirm, setRegConfirm] = useState('')
   const [signupOtp, setSignupOtp] = useState('')
+  const [signupToken, setSignupToken] = useState('')
 
   // Forgot password states
   const [forgotEmail, setForgotEmail] = useState('')
@@ -63,8 +80,7 @@ function Login() {
     try {
       const response = await API.post('/auth/login', { email, password })
       if (response.success) {
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        setAuth(response.token, response.user)
         if (response.user.role === 'admin') {
           navigate('/admin')
         } else {
@@ -89,6 +105,12 @@ function Login() {
       return
     }
 
+    const pwError = validatePasswordStrength(regPassword)
+    if (pwError) {
+      setSignupError(pwError)
+      return
+    }
+
     setSignupLoading(true)
     try {
       const response = await API.post('/auth/signup/send-otp', {
@@ -97,6 +119,7 @@ function Login() {
         password: regPassword,
       })
       if (response.success) {
+        setSignupToken(response.signupToken)
         setSignupSuccess(`OTP sent to ${regEmail}. Check your inbox.`)
         setSignupStep('otp')
       }
@@ -116,10 +139,10 @@ function Login() {
       const response = await API.post('/auth/signup/verify-otp', {
         email: regEmail,
         otp: signupOtp,
+        signupToken,
       })
       if (response.success) {
-        localStorage.setItem('token', response.token)
-        localStorage.setItem('user', JSON.stringify(response.user))
+        setAuth(response.token, response.user)
         navigate('/home')
       }
     } catch (error) {
@@ -177,6 +200,12 @@ function Login() {
     setForgotLoading(true)
     if (newPassword !== confirmNewPassword) {
       setForgotError('Passwords do not match!')
+      setForgotLoading(false)
+      return
+    }
+    const pwError = validatePasswordStrength(newPassword)
+    if (pwError) {
+      setForgotError(pwError)
       setForgotLoading(false)
       return
     }
@@ -383,32 +412,26 @@ return (
               <label className="block text-sm font-medium mb-1">Password</label>
               <div className="relative">
                 <input
-                  type={showRegPassword ? 'text' : 'password'}
+                  type="password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
-                <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                  {showRegPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                </button>
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Confirm Password</label>
               <div className="relative">
                 <input
-                  type={showRegConfirm ? 'text' : 'password'}
+                  type="password"
                   value={regConfirm}
                   onChange={(e) => setRegConfirm(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
-                <button type="button" onClick={() => setShowRegConfirm(!showRegConfirm)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                  {showRegConfirm ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                </button>
               </div>
             </div>
             <button
@@ -538,32 +561,26 @@ return (
                     <label className="block text-sm font-medium mb-1">New Password</label>
                     <div className="relative">
                       <input
-                        type={showNewPassword ? 'text' : 'password'}
+                        type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
-                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                        {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                      </button>
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Confirm New Password</label>
                     <div className="relative">
                       <input
-                        type={showConfirmNewPassword ? 'text' : 'password'}
+                        type="password"
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
-                      <button type="button" onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                        {showConfirmNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                      </button>
                     </div>
                   </div>
                   <button
