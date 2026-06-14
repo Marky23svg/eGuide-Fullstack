@@ -371,7 +371,7 @@ return (
               <label className="block text-sm font-medium mb-1">Password</label>
               <div className="relative">
                 <input
-                   type={showLoginPassword ? 'text' : 'password'}
+                  type={showLoginPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
@@ -379,7 +379,7 @@ return (
                   required
                 />
                 <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  {showLoginPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
             </div>
