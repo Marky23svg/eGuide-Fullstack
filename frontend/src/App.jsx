@@ -18,6 +18,7 @@ class ErrorBoundary extends Component {
   }
 }
 import Login from './Pages/login'
+import AdminModal from './Pages/Admin/AdminModal'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
 import Homepage from './Pages/Homepage'
@@ -134,6 +135,7 @@ function App() {
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
           <Route path="/admin/requirements" element={<AdminRoute><AdminDocuments /></AdminRoute>} />
+          <Route path="/admin/students" element={<AdminRoute><AdminModal /></AdminRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

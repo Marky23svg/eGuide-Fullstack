@@ -6,19 +6,22 @@ import {
   MdChevronLeft, MdChevronRight,
   MdLogout, MdMenu, MdClose,
 } from 'react-icons/md'
+import { FaUsers } from 'react-icons/fa'
 import { clearAuth } from '../../utils/authStorage'
 
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: MdDashboard,  path: '/admin' },
   { label: 'Announcements',  icon: MdCampaign,   path: '/admin/announcements' },
   { label: 'Documents',   icon: MdChecklist,  path: '/admin/requirements' },
+  { label: 'Students',   icon: FaUsers,  path: '/admin/students' }
 ]
+
+
 
 function AdminLayout({ children, activePage }) {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
-
   const closeMobile = useCallback(() => setMobileOpen(false), [])
 
   return (

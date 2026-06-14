@@ -40,10 +40,10 @@ function Announcements() {
         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-50 to-transparent" />
         <div className="relative z-10 max-w-6xl mx-auto">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">eGuide ICCT</p>
-          <h1 className="text-3xl sm:text-4xl font-black text-white uppercase" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}>
+          <h1 className="text-4xl font-black text-white uppercase" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}>
             Announcements
           </h1>
-          <p className="text-white/50 text-sm mt-2">Stay updated with the latest news and announcements.</p>
+          <p className="text-white/100 text-sm mt-2 text-shadow-lg/30 ">Stay updated with the latest news and announcements.</p>
         </div>
       </div>
 

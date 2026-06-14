@@ -93,7 +93,7 @@ function Homepage() {
         <div className="relative z-10 flex flex-col items-center text-center px-6 gap-6">
           <h1
             ref={heroTitleRef}
-            className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight uppercase text-center px-4"
+            className="text-5xl font-black text-white leading-tight uppercase text-center px-4"
             style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}
           >
             Elevating the Experience<br />
@@ -101,7 +101,7 @@ function Homepage() {
           </h1>
           <p
             ref={heroParagraphRef}
-            className="text-white/80 text-base md:text-lg max-w-xl"
+            className="text-white/80 text-lg max-w-xl"
           >
             A bridge between students and the institution towards efficient and guided academic processes in one platform.
           </p>

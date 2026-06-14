@@ -18,3 +18,17 @@ button, a, [role="button"] {
 .animate-slideDown {
   animation: slideDown 0.3s ease-out;
 }
+
+/* Hide the default browser eye icon for password inputs */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}

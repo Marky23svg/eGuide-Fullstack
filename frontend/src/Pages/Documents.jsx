@@ -6,6 +6,7 @@ import DocumentCard from '../components/DocumentCard'
 import requirementBg from '../assets/Requirement_bg.webp'
 import API from '../services/api'
 import { saved as savedApi } from '../services/api'
+import { MdSearch, MdSort } from 'react-icons/md'
 import { getUser } from '../utils/authStorage'
 
 function Documents() {
@@ -136,10 +137,10 @@ function Documents() {
         <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-gray-50 to-transparent" />
         <div className="relative z-10 max-w-6xl mx-auto">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-400 mb-2">eGuide ICCT</p>
-          <h1 className="text-3xl sm:text-4xl font-black text-white uppercase" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}>
+          <h1 className="text-4xl font-black text-white uppercase" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}>
             Documents
           </h1>
-          <p className="text-white/50 text-sm mt-2">Track and manage your documents in one place.</p>
+          <p className="text-white/100 text-sm mt-2 text-shadow-lg/30">Track and manage your documents in one place.</p>
         </div>
       </div>
 

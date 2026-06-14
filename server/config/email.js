@@ -1,52 +1,63 @@
-// Uses Gmail SMTP — configured via environment variables.
-import nodemailer from 'nodemailer';
-import { config } from './config.js';
+// Uses Brevo HTTP API — no SMTP, no port issues, works on any host.
+// API key starts with xkeysib-
+// Set BREVO_API_KEY in your environment.
 
-const FROM_EMAIL   = config.email.from;
-const FROM_NAME    = config.email.fromName;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
-// Create Nodemailer transporter with Gmail service configuration
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: config.email.user,
-        pass: config.email.pass,
-    },
-});
+const FROM_EMAIL   = process.env.EMAIL_USER      || 'iccteguide@gmail.com';
+const FROM_NAME    = process.env.EMAIL_FROM_NAME || 'eGuide ICCT';
 
 // ── Startup check ─────────────────────────────────────────────────────────────
 export const verifyEmailTransporter = async () => {
-    try {
-        await transporter.verify();
-        console.log(`✅ [Email] Gmail SMTP connection ready — from: ${FROM_NAME} <${FROM_EMAIL}>`);
-        return true;
-    } catch (error) {
-        console.error('❌ [Email] Gmail SMTP verification failed:', error.message);
+    if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️  [Email] BREVO_API_KEY not set — emails disabled.');
         return false;
     }
+    console.log(`✅ [Email] Brevo HTTP API ready — from: ${FROM_NAME} <${FROM_EMAIL}>`);
+    console.log(`   Key prefix: ${process.env.BREVO_API_KEY.slice(0, 16)}... length=${process.env.BREVO_API_KEY.length}`);
+    return true;
 };
 
 // ── Bulk sender ───────────────────────────────────────────────────────────────
 export const sendBulkEmail = async (recipients, subject, htmlContent) => {
+    if (!process.env.BREVO_API_KEY) {
+        console.warn('⚠️  [Email] Skipping — BREVO_API_KEY not set.');
+        return { success: false, error: 'BREVO_API_KEY not configured.' };
+    }
+
     const results = [];
 
     for (const recipient of recipients) {
         try {
-            const mailOptions = {
-                from: `"${FROM_NAME}" <${FROM_EMAIL}>`,
-                to: recipient.email,
-                subject,
-                html: htmlContent,
-            };
+            const response = await fetch(BREVO_API_URL, {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': process.env.BREVO_API_KEY,
+                    'content-type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sender:  { name: FROM_NAME, email: FROM_EMAIL },
+                    to:      [{ email: recipient.email }],
+                    subject,
+                    htmlContent,
+                }),
+            });
 
-            const info = await transporter.sendMail(mailOptions);
-            console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${info.messageId}`);
-            results.push({ email: recipient.email, success: true, messageId: info.messageId });
+            const data = await response.json();
 
-            // Small delay to prevent rate limit issues
+            if (!response.ok) {
+                const msg = data?.message || `HTTP ${response.status}`;
+                console.error(`❌ [Email] Failed to ${recipient.email}: ${msg}`);
+                results.push({ email: recipient.email, success: false, error: msg });
+            } else {
+                console.log(`📧 [Email] Sent to ${recipient.email} — messageId: ${data.messageId}`);
+                results.push({ email: recipient.email, success: true, messageId: data.messageId });
+            }
+
             await new Promise((resolve) => setTimeout(resolve, 100));
         } catch (err) {
-            console.error(`❌ [Email] Failed to send to ${recipient.email}: ${err.message}`);
+            console.error(`❌ [Email] Exception for ${recipient.email}: ${err.message}`);
             results.push({ email: recipient.email, success: false, error: err.message });
         }
     }
