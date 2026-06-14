@@ -523,8 +523,9 @@ function CardContent({ profileOpen, onLogout, onClose }) {
 }
 
 function NavLogo() {
+  const navigate = useNavigate()
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/home')}>
       <img 
         src={icctLogo} 
         alt="ICCT Logo" 

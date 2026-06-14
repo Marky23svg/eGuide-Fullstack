@@ -97,17 +97,18 @@ const Footer = forwardRef((props, ref) => {
           <div className="footer-col flex flex-col gap-5">
             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Contact Us</h4>
             <div className="flex flex-col gap-4">
-              {[
-                { label: 'Address', value: 'ICCT Colleges, Cainta, Rizal, Philippines' },
-                { label: 'Email', value: 'info@icct.edu.ph' },
-                { label: 'Phone', value: '(02) 8123-4567' },
-                { label: 'Office Hours', value: 'Mon - Sat: 8:00 AM - 5:00 PM' },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs text-blue-400/70 uppercase tracking-wider mb-1">{label}</p>
-                  <p className="text-white/50 text-sm">{value}</p>
-                </div>
-              ))}
+              <div>
+                <p className="text-xs text-blue-400/70 uppercase tracking-wider mb-1">Address</p>
+                <p className="text-white/50 text-sm">P. Rizal St., Brgy. Sto. Domingo, Cainta, Rizal 1900, Philippines</p>
+              </div>
+              <div>
+                <p className="text-xs text-blue-400/70 uppercase tracking-wider mb-1">Email</p>
+                <a href="mailto:iccteguide@gmail.com" className="text-white/50 text-sm hover:text-blue-400 transition">iccteguide@gmail.com</a>
+              </div>
+              <div>
+                <p className="text-xs text-blue-400/70 uppercase tracking-wider mb-1">Office Hours</p>
+                <p className="text-white/50 text-sm">Mon – Sat: 8:00 AM – 5:00 PM<br />Except on holidays</p>
+              </div>
             </div>
           </div>
 

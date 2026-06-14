@@ -34,6 +34,8 @@ function Login() {
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false)
+  const [showRegPassword, setShowRegPassword] = useState(false)
+  const [showRegConfirm, setShowRegConfirm] = useState(false)
 
   // Login form states
   const [email, setEmail] = useState('')
@@ -70,6 +72,19 @@ function Login() {
     if (error?.data?.message) return error.data.message
     if (error?.response?.data?.message) return error.response.data.message
     return fallback
+  }
+
+  // Password strength checker
+  const getStrength = (pwd) => {
+    if (!pwd) return null
+    const has8 = pwd.length >= 8
+    const hasUpper = /[A-Z]/.test(pwd)
+    const hasLower = /[a-z]/.test(pwd)
+    const hasNum = /[0-9]/.test(pwd)
+    const score = [has8, hasUpper, hasLower, hasNum].filter(Boolean).length
+    if (score <= 2) return { label: 'Weak', color: 'bg-red-500', width: 'w-1/4', text: 'text-red-500' }
+    if (score === 3) return { label: 'Fair', color: 'bg-yellow-500', width: 'w-2/4', text: 'text-yellow-500' }
+    return { label: 'Strong', color: 'bg-green-500', width: 'w-full', text: 'text-green-500' }
   }
 
   // Login — direct, no OTP
@@ -306,7 +321,7 @@ return (
 
         {/* Page title */}
         <h2 className="text-2xl font-bold text-center">eGuide <span className="text-blue-600">ICCT</span></h2>
-        <p className="text-center text-sm mb-4">Welcome Back!</p>
+        <p className="text-center text-sm mb-4">Welcome to eGuide!</p>
 
         {/* Tab buttons — hidden when on forgot password flow */}
         {activeTab !== 'forgot' && (
@@ -412,26 +427,44 @@ return (
               <label className="block text-sm font-medium mb-1">Password</label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showRegPassword ? 'text' : 'password'}
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   required
                 />
+                <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                  {showRegPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                </button>
               </div>
+              <p className="text-xs text-gray-400 mt-1">At least 8 characters, including one uppercase and one lowercase letter.</p>
+              {regPassword && (() => {
+                const s = getStrength(regPassword)
+                return (
+                  <div className="mt-1.5">
+                    <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-300 ${s.color} ${s.width}`} />
+                    </div>
+                    <p className={`text-xs mt-0.5 font-semibold ${s.text}`}>{s.label}</p>
+                  </div>
+                )
+              })()}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Confirm Password</label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showRegConfirm ? 'text' : 'password'}
                   value={regConfirm}
                   onChange={(e) => setRegConfirm(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   required
                 />
+                <button type="button" onClick={() => setShowRegConfirm(!showRegConfirm)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                  {showRegConfirm ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                </button>
               </div>
             </div>
             <button
