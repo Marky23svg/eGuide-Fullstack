@@ -603,8 +603,8 @@ return (
                         className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                        {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                      <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                        {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                       </button>
                     </div>
                   </div>
@@ -612,15 +612,15 @@ return (
                     <label className="block text-sm font-medium mb-1">Confirm New Password</label>
                     <div className="relative">
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showConfirmNewPassword ? 'text' : 'password'}
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="Confirm password"
                         className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
-                        {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                      <button type="button" onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
+                        {showConfirmNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                       </button>
                     </div>
                   </div>
