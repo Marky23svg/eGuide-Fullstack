@@ -8,7 +8,6 @@ import API from '../services/api'
 import { saved as savedApi } from '../services/api'
 import { MdSearch, MdSort } from 'react-icons/md'
 import { getUser } from '../utils/authStorage'
-import { MdSearch, MdSort } from 'react-icons/md'
 
 function Documents() {
   const [requirements, setRequirements] = useState([])
