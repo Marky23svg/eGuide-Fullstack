@@ -126,6 +126,7 @@ function Announcements() {
             className="relative bg-white w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
+            {/* Hero image / header */}
             <div className="relative shrink-0">
               {selected.image ? (
                 <img src={selected.image} alt={selected.title} className="w-full h-48 object-cover" />
@@ -141,7 +142,9 @@ function Announcements() {
                 )}
                 <h3 className="text-xl font-black text-white leading-tight mt-1">{selected.title}</h3>
                 <p className="text-white/50 text-xs mt-1">
-                  {selected.date || new Date(selected.date_posted).toLocaleDateString()}
+                  {selected.date
+                    ? new Date(selected.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : new Date(selected.date_posted).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
               <button
@@ -152,26 +155,35 @@ function Announcements() {
               </button>
             </div>
 
+            {/* Scrollable body */}
             <div className="overflow-y-auto flex flex-col gap-5 p-6">
+
+              {/* Short description */}
               {selected.description && (
                 <p className="text-gray-600 text-sm leading-relaxed">{selected.description}</p>
               )}
+
+              {/* Full details */}
               {selected.fullDetails && (
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-2">Full Details</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{selected.fullDetails}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{selected.fullDetails}</p>
                 </div>
               )}
-              {!selected.description && !selected.fullDetails && (
+
+              {/* Fallback if neither description nor fullDetails */}
+              {!selected.description && !selected.fullDetails && selected.content && (
                 <p className="text-gray-600 text-sm leading-relaxed">{selected.content}</p>
               )}
-              {selected.requirements?.length > 0 && (
+
+              {/* Requirements */}
+              {Array.isArray(selected.requirements) && selected.requirements.filter(r => r?.trim()).length > 0 && (
                 <>
                   <div className="border-t border-gray-100" />
                   <div>
                     <p className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-3">Requirements</p>
                     <ul className="flex flex-col gap-2">
-                      {selected.requirements.map((req, i) => (
+                      {selected.requirements.filter(r => r?.trim()).map((req, i) => (
                         <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
                           <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                           {req}
@@ -181,7 +193,9 @@ function Announcements() {
                   </div>
                 </>
               )}
-              {selected.actionButton?.label && (
+
+              {/* Action button */}
+              {selected.actionButton?.label && selected.actionButton?.url && (
                 <>
                   <div className="border-t border-gray-100" />
                   <a

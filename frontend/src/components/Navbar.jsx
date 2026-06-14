@@ -5,8 +5,8 @@ import icctLogo from '../assets/Icctlogo.webp'
 import { MdMenu, MdClose } from 'react-icons/md'
 import { FiLogOut } from 'react-icons/fi'
 import { getUser, clearAuth } from '../utils/authStorage'
+import { IoPerson } from "react-icons/io5";
 
-// ─── STYLES ──────────────────────────────────────────────────
 const NAV_TEXT_STYLE = {
   color:      '#ffffff',
   fontWeight: '700',
@@ -28,13 +28,11 @@ const CARD_TRANSITION = [
   'box-shadow 0.3s ease',
 ].join(', ')
 
-// Separate Mobile Menu Panel Component
 function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userInitial, handleLogout }) {
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop overlay - higher z-index */}
           <motion.div
             className="fixed inset-0 bg-black/60 z-[60] md:hidden"
             initial={{ opacity: 0 }}
@@ -43,21 +41,15 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
             transition={{ duration: 0.3 }}
             onClick={onClose}
           />
-          
-          {/* Menu panel - very high z-index to be above chatbot */}
           <motion.div
             className="fixed top-0 right-0 h-full w-72 z-[70] md:hidden overflow-y-auto"
-            style={{
-              backgroundColor: '#030712',
-              boxShadow: '-8px 0 32px rgba(0,0,0,0.5)',
-            }}
+            style={{ backgroundColor: '#030712', boxShadow: '-8px 0 32px rgba(0,0,0,0.5)' }}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'tween', duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
           >
             <div className="flex flex-col min-h-full" style={{ backgroundColor: '#030712' }}>
-              {/* Header row with profile and X button side by side */}
               <motion.div
                 className="flex items-center justify-between px-5 pt-5 pb-4"
                 style={{ backgroundColor: '#030712' }}
@@ -74,16 +66,11 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
                     <p className="text-gray-400 text-xs truncate">{userEmail}</p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 text-white/80 hover:text-white transition-colors shrink-0"
-                  aria-label="Close menu"
-                >
+                <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors shrink-0" aria-label="Close menu">
                   <MdClose size={24} />
                 </button>
               </motion.div>
 
-              {/* Navigation links - below the profile row */}
               <div className="flex-1 px-5 pt-2" style={{ backgroundColor: '#030712' }}>
                 <motion.div
                   className="flex flex-col gap-1"
@@ -91,12 +78,7 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
                   animate="visible"
                   variants={{
                     hidden: {},
-                    visible: {
-                      transition: {
-                        staggerChildren: 0.08,
-                        delayChildren: 0.15,
-                      },
-                    },
+                    visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
                   }}
                 >
                   {[
@@ -106,38 +88,24 @@ function MobileMenuPanel({ isOpen, onClose, navigate, userName, userEmail, userI
                   ].map(({ label, path }) => (
                     <motion.div
                       key={path}
-                      variants={{
-                        hidden: { y: -20, opacity: 0 },
-                        visible: { y: 0, opacity: 1 },
-                      }}
+                      variants={{ hidden: { y: -20, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
                       transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     >
                       <button
-                        onClick={() => {
-                          navigate(path)
-                          onClose()
-                        }}
+                        onClick={() => { navigate(path); onClose() }}
                         className="w-full text-left text-white/90 hover:text-white text-base font-semibold py-3 px-4 rounded-lg hover:bg-white/10 transition-all duration-200"
                       >
                         {label}
                       </button>
                     </motion.div>
                   ))}
-                  
-                  {/* Logout button */}
                   <motion.div
-                    variants={{
-                      hidden: { y: -20, opacity: 0 },
-                      visible: { y: 0, opacity: 1 },
-                    }}
+                    variants={{ hidden: { y: -20, opacity: 0 }, visible: { y: 0, opacity: 1 } }}
                     transition={{ type: 'tween', duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                     className="mt-4 pt-4 border-t border-white/10"
                   >
                     <button
-                      onClick={() => {
-                        handleLogout()
-                        onClose()
-                      }}
+                      onClick={() => { handleLogout(); onClose() }}
                       className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 text-base font-semibold py-3 px-4 rounded-lg hover:bg-red-500/10 transition-all duration-200"
                     >
                       <FiLogOut size={18} /> Log Out
@@ -167,29 +135,21 @@ function Navbar() {
   const profileRef = useRef(null)
   const profileOpenRef = useRef(false)
 
-  const handleLogout = () => {
-    clearAuth()
-    navigate('/')
-  }
-
+  const handleLogout = () => { clearAuth(); navigate('/') }
   const closeMobile = useCallback(() => setMobileMenuOpen(false), [])
   const openMobile = useCallback(() => setMobileMenuOpen(true), [])
 
   useEffect(() => { profileOpenRef.current = profileOpen }, [profileOpen])
 
-  // Close profile on outside click
   useEffect(() => {
     if (!profileOpen) return
     const handleClickOutside = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false)
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [profileOpen])
 
-  // Close mobile menu on scroll
   useEffect(() => {
     if (!mobileMenuOpen) return
     const handleScroll = () => setMobileMenuOpen(false)
@@ -223,13 +183,11 @@ function Navbar() {
       })
       setIsDark(dark)
     }
-
     const handleScroll = () => {
       const past = window.scrollY > 64
       scrolledRef.current = past
       setIsFixed(past)
       setNavVisible(!past)
-
       if (window.location.pathname === '/home') {
         let dark = true
         document.querySelectorAll('[data-nav="light"]').forEach((s) => {
@@ -247,7 +205,6 @@ function Navbar() {
         setIsDark(headerBottom > 80)
       }
     }
-
     const handleMouseMove = (e) => {
       if (!scrolledRef.current) return
       if (e.clientY < 80) {
@@ -259,7 +216,6 @@ function Navbar() {
         hideTimer.current = setTimeout(() => setNavVisible(false), 500)
       }
     }
-
     window.addEventListener('scroll', handleScroll)
     window.addEventListener('mousemove', handleMouseMove)
     setTimeout(checkDark, 50)
@@ -269,16 +225,17 @@ function Navbar() {
     }
   }, [])
 
+  // Card expands taller to fit new content
   const cardStyle = {
     top: '15px',
     right: '16px',
     width: profileOpen ? '228px' : '40px',
-    height: profileOpen ? '112px' : '40px',
+    height: profileOpen ? '180px' : '40px',
     borderRadius: profileOpen ? '20px' : '50%',
     background: profileOpen ? 'rgba(255,255,255,0.94)' : 'rgba(37,99,235,0.95)',
     backdropFilter: profileOpen ? 'blur(20px) saturate(180%)' : 'none',
-    boxShadow: profileOpen 
-      ? '0 8px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.06)' 
+    boxShadow: profileOpen
+      ? '0 8px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.06)'
       : '0 2px 14px rgba(37,99,235,0.45)',
     overflow: 'hidden',
     cursor: profileOpen ? 'default' : 'pointer',
@@ -314,8 +271,7 @@ function Navbar() {
 
   return (
     <>
-      {/* Separate Mobile Menu Panel - not inside navbar */}
-      <MobileMenuPanel 
+      <MobileMenuPanel
         isOpen={mobileMenuOpen}
         onClose={closeMobile}
         navigate={navigate}
@@ -325,20 +281,14 @@ function Navbar() {
         handleLogout={handleLogout}
       />
 
-      {/* Absolute Navbar (Static at top) — hidden on mobile once scrolled */}
-      <div 
+      <div
         className="absolute top-0 left-0 w-full z-40 md:block hidden"
-        style={{
-          background: 'transparent',
-          opacity: isFixed ? 0 : 1,
-          pointerEvents: isFixed ? 'none' : 'auto',
-        }}
+        style={{ background: 'transparent', opacity: isFixed ? 0 : 1, pointerEvents: isFixed ? 'none' : 'auto' }}
       >
         {navContent}
       </div>
 
-      {/* Fixed Navbar — desktop: hover to show, mobile: always visible */}
-      <div 
+      <div
         className="fixed top-0 left-0 w-full z-40 bg-gray-950"
         style={{
           transform: (isFixed && navVisible) ? 'translateY(0)' : 'translateY(-120%)',
@@ -348,30 +298,22 @@ function Navbar() {
             ? 'transform 250ms cubic-bezier(0.4,0,0.2,1), opacity 250ms ease'
             : 'transform 400ms cubic-bezier(0.4,0,0.2,1), opacity 550ms ease',
         }}
-        // desktop only — mobile uses the one below
       >
         <div className="hidden md:block">{navContent}</div>
       </div>
 
-      {/* Mobile-only static navbar — always fixed at top */}
       <div className="fixed top-0 left-0 w-full z-40 bg-gray-950 md:hidden">
         {navContent}
       </div>
 
-      {/* Profile card — desktop only */}
       <div ref={profileRef}>
         {!isFixed && (
           <div
             onClick={() => !profileOpen && setProfileOpen(true)}
-            style={{ 
-              position: 'absolute', 
-              ...cardStyle,
-              opacity: 1,
-              transition: CARD_TRANSITION,
-            }}
+            style={{ position: 'absolute', ...cardStyle, opacity: 1, transition: CARD_TRANSITION }}
             className="hidden md:block"
           >
-            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} location={location} />
           </div>
         )}
         {isFixed && (
@@ -383,15 +325,11 @@ function Navbar() {
               transform: navVisible ? 'translateY(0)' : 'translateY(-300%)',
               opacity: navVisible ? 1 : 0,
               pointerEvents: navVisible ? 'auto' : 'none',
-              transition: `${CARD_TRANSITION}, ${
-                navVisible 
-                  ? 'transform 300ms ease, opacity 250ms ease' 
-                  : 'transform 600ms ease, opacity 550ms ease'
-              }`,
+              transition: `${CARD_TRANSITION}, ${navVisible ? 'transform 300ms ease, opacity 250ms ease' : 'transform 600ms ease, opacity 550ms ease'}`,
             }}
             className="hidden md:block"
           >
-            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} />
+            <CardContent profileOpen={profileOpen} onLogout={handleLogout} onClose={() => setProfileOpen(false)} location={location} />
           </div>
         )}
       </div>
@@ -399,76 +337,103 @@ function Navbar() {
   )
 }
 
-function CardContent({ profileOpen, onLogout, onClose }) {
+function CardContent({ profileOpen, onLogout, onClose, location }) {
   const user = getUser()
   const userName = user.name || 'Guest'
   const userEmail = user.email || 'guest@icct.edu.ph'
   const userInitial = (userName.charAt(0) || 'U').toUpperCase()
+  const role = user.role || 'student'
+
+  // Document progress
+  const [docProgress, setDocProgress] = useState({ completed: 0, total: 0, loaded: false })
+
+  useEffect(() => {
+    if (!profileOpen) return
+    Promise.all([
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requirements?limit=100`).then(r => r.json()).catch(() => ({ data: [] })),
+      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/saved`, {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }
+      }).then(r => r.json()).catch(() => ({ data: [] })),
+    ]).then(([reqRes, savedRes]) => {
+      const reqs = reqRes.data || reqRes || []
+      const saved = savedRes.data || savedRes || []
+      const total = Array.isArray(reqs) ? reqs.length : 0
+      // Only count as done if ALL steps in progress are checked
+      const completed = Array.isArray(saved) ? saved.filter(item => {
+        const steps = item.progress?.steps
+        return Array.isArray(steps) && steps.length > 0 && steps.every(Boolean)
+      }).length : 0
+      setDocProgress({ completed, total, loaded: true })
+    }).catch(() => setDocProgress({ completed: 0, total: 0, loaded: true }))
+  }, [profileOpen])
+
+  // Derive current page label from path
+  const pageLabels = { '/home': 'Home', '/announcements': 'Announcements', '/requirements': 'Documents' }
+  const currentPage = pageLabels[location?.pathname] || 'eGuide'
+
+  // Member since — only show if createdAt exists and is a valid date
+  const memberSince = (() => {
+    if (!user.createdAt) return null
+    const d = new Date(user.createdAt)
+    if (isNaN(d.getTime())) return null
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+  })()
+
+  const docPct = docProgress.total > 0 ? Math.round((docProgress.completed / docProgress.total) * 100) : 0
 
   return (
     <>
+      {/* Avatar */}
       <div
         style={{
-          position:       'absolute',
-          top:            profileOpen ? '12px' : '0px',
-          left:           profileOpen ? '12px' : '0px',
-          width:          '40px',
-          height:         '40px',
-          borderRadius:   '50%',
-          background:     profileOpen ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)' : 'transparent',
-          color:          '#fff',
-          display:        'flex',
-          alignItems:     'center',
+          position: 'absolute',
+          top: profileOpen ? '12px' : '0px',
+          left: profileOpen ? '12px' : '0px',
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: profileOpen ? 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)' : 'transparent',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
-          fontWeight:     '700',
-          fontSize:       '15px',
-          letterSpacing:  '0.03em',
-          transform:      profileOpen ? 'rotate(-360deg)' : 'rotate(0deg)',
-          transition:     'top 0.42s cubic-bezier(0.4,0,0.2,1), left 0.42s cubic-bezier(0.4,0,0.2,1), background 0.2s ease, transform 0.4s ease',
-          zIndex:         2,
-          userSelect:     'none',
+          fontWeight: '700',
+          fontSize: '15px',
+          letterSpacing: '0.03em',
+          transform: profileOpen ? 'rotate(-360deg)' : 'rotate(0deg)',
+          transition: 'top 0.42s cubic-bezier(0.4,0,0.2,1), left 0.42s cubic-bezier(0.4,0,0.2,1), background 0.2s ease, transform 0.4s ease',
+          zIndex: 2,
+          userSelect: 'none',
         }}
       >
         {userInitial}
       </div>
 
+      {/* Close button */}
       <button
         onClick={(e) => { e.stopPropagation(); onClose() }}
         style={{
-          position:       'absolute',
-          top:            '10px',
-          right:          '10px',
-          width:          '22px',
-          height:         '22px',
-          borderRadius:   '50%',
-          background:     'rgba(0,0,0,0.07)',
-          border:         'none',
-          cursor:         'pointer',
-          display:        'flex',
-          alignItems:     'center',
-          justifyContent: 'center',
-          fontSize:       '9px',
-          color:          '#6b7280',
-          opacity:        profileOpen ? 1 : 0,
-          pointerEvents:  profileOpen ? 'auto' : 'none',
-          transition:     'opacity 0.2s ease 0.15s',
-          zIndex:         3,
+          position: 'absolute', top: '10px', right: '10px',
+          width: '22px', height: '22px', borderRadius: '50%',
+          background: 'rgba(0,0,0,0.07)', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '9px', color: '#6b7280',
+          opacity: profileOpen ? 1 : 0,
+          pointerEvents: profileOpen ? 'auto' : 'none',
+          transition: 'opacity 0.2s ease 0.15s', zIndex: 3,
         }}
         aria-label="Close"
       >
         ✕
       </button>
 
+      {/* Name + email */}
       <div
         style={{
-          position:   'absolute',
-          top:        '14px',
-          left:       '60px',
-          right:      '32px',
-          direction:  'ltr',
-          textAlign:  'left',
-          opacity:    profileOpen ? 1 : 0,
-          transform:  profileOpen ? 'translateX(0)' : 'translateX(20px)',
+          position: 'absolute', top: '14px', left: '60px', right: '32px',
+          direction: 'ltr', textAlign: 'left',
+          opacity: profileOpen ? 1 : 0,
+          transform: profileOpen ? 'translateX(0)' : 'translateX(20px)',
           transition: profileOpen ? 'opacity 0.2s ease 0.2s' : 'opacity 0.05s ease',
           pointerEvents: 'none',
         }}
@@ -481,39 +446,107 @@ function CardContent({ profileOpen, onLogout, onClose }) {
         </p>
       </div>
 
+      {/* Info pills row */}
       <div
         style={{
-          position:      'absolute',
-          bottom:        0,
-          left:          0,
-          right:         0,
-          direction:     'ltr',
-          borderTop:     '1px solid rgba(0,0,0,0.07)',
-          opacity:       profileOpen ? 1 : 0,
-          transition:    profileOpen ? 'opacity 0.2s ease 0.25s' : 'opacity 0.05s ease',
+          position: 'absolute', top: '68px', left: '12px', right: '12px',
+          direction: 'ltr',
+          opacity: profileOpen ? 1 : 0,
+          transform: profileOpen ? 'translateY(0)' : 'translateY(6px)',
+          transition: profileOpen ? 'opacity 0.2s ease 0.25s, transform 0.2s ease 0.25s' : 'opacity 0.05s ease',
+          pointerEvents: 'none',
+          display: 'flex', gap: '6px', flexWrap: 'wrap',
+        }}
+      >
+                {/* Role badge */}
+        <span style={{
+          fontSize: '10px', fontWeight: '700', letterSpacing: '0.05em',
+          padding: '3px 8px', borderRadius: '20px',
+          background: role === 'admin' ? '#fef3c7' : '#eff6ff',
+          color: role === 'admin' ? '#92400e' : '#1d4ed8',
+          textTransform: 'capitalize',
+          display: 'flex', alignItems: 'center', gap: '4px'
+        }}>
+          <IoPerson /> {role === 'admin' ? 'Admin' : 'Student'}
+        </span>
+        {/* Current page badge */}
+        <span style={{
+          fontSize: '10px', fontWeight: '600', letterSpacing: '0.03em',
+          padding: '3px 8px', borderRadius: '20px',
+          background: '#f3f4f6', color: '#6b7280',
+        }}>
+          ⚲ {currentPage}
+        </span>
+      </div>
+
+      {/* Member since row — only shown if createdAt is available */}
+      {memberSince && (
+        <div
+          style={{
+            position: 'absolute', top: '106px', left: '12px', right: '12px',
+            direction: 'ltr',
+            opacity: profileOpen ? 1 : 0,
+            transform: profileOpen ? 'translateY(0)' : 'translateY(6px)',
+            transition: profileOpen ? 'opacity 0.2s ease 0.3s, transform 0.2s ease 0.3s' : 'opacity 0.05s ease',
+            pointerEvents: 'none',
+            display: 'flex', alignItems: 'center', gap: '5px',
+          }}
+        >
+          <span style={{ fontSize: '10px', color: '#9ca3af' }}>🗓</span>
+          <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>Member since {memberSince}</span>
+        </div>
+      )}
+
+      {/* Document progress bar */}
+      <div
+        style={{
+          position: 'absolute',
+          top: memberSince ? '126px' : '106px',
+          left: '12px', right: '12px',
+          direction: 'ltr',
+          opacity: profileOpen ? 1 : 0,
+          transform: profileOpen ? 'translateY(0)' : 'translateY(6px)',
+          transition: profileOpen ? 'opacity 0.2s ease 0.33s, transform 0.2s ease 0.33s' : 'opacity 0.05s ease',
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+          <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>📄 Documents</span>
+          <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>
+            {docProgress.loaded ? `${docProgress.completed}/${docProgress.total} done` : '...'}
+          </span>
+        </div>
+        <div style={{ width: '100%', height: '5px', background: '#f3f4f6', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%',
+            width: `${docPct}%`,
+            borderRadius: '99px',
+            background: docPct === 100 ? '#22c55e' : '#3b82f6',
+            transition: 'width 0.6s ease',
+          }} />
+        </div>
+      </div>
+
+      {/* Logout */}
+      <div
+        style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          direction: 'ltr', borderTop: '1px solid rgba(0,0,0,0.07)',
+          opacity: profileOpen ? 1 : 0,
+          transition: profileOpen ? 'opacity 0.2s ease 0.3s' : 'opacity 0.05s ease',
           pointerEvents: profileOpen ? 'auto' : 'none',
         }}
       >
         <button
           onClick={onLogout}
           style={{
-            width:          '100%',
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'center',
-            gap:            '5px',
-            padding:        '9px 16px',
-            fontSize:       '11px',
-            fontWeight:     '600',
-            color:          '#f87171',
-            background:     'transparent',
-            border:         'none',
-            cursor:         'pointer',
-            letterSpacing:  '0.05em',
-            transition:     'background 0.15s ease, color 0.15s ease',
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '5px', padding: '9px 16px', fontSize: '11px', fontWeight: '600',
+            color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer',
+            letterSpacing: '0.05em', transition: 'background 0.15s ease, color 0.15s ease',
           }}
           onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; e.currentTarget.style.color = '#ef4444' }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent';           e.currentTarget.style.color = '#f87171' }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#f87171' }}
         >
           <FiLogOut size={11} /> LOG OUT
         </button>
@@ -523,36 +556,15 @@ function CardContent({ profileOpen, onLogout, onClose }) {
 }
 
 function NavLogo() {
+  const navigate = useNavigate()
   return (
-    <div className="flex items-center gap-3">
-      <img 
-        src={icctLogo} 
-        alt="ICCT Logo" 
-        className="h-12 w-12 rounded-full object-cover border-2 border-white/30" 
-        style={{ filter: 'drop-shadow(0 1px 6px rgba(0,0,0,0.3))' }}
-      />
+    <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/home')}>
+      <img src={icctLogo} alt="ICCT Logo" className="h-12 w-12 rounded-full object-cover border-2 border-white/30" style={{ filter: 'drop-shadow(0 1px 6px rgba(0,0,0,0.3))' }} />
       <div className="flex flex-col leading-none">
-        <span
-          style={{
-            ...NAV_TEXT_STYLE,
-            fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '1.8rem',
-            letterSpacing: '0.08em',
-            lineHeight:    1,
-          }}
-        >
+        <span style={{ ...NAV_TEXT_STYLE, fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', fontSize: '1.8rem', letterSpacing: '0.08em', lineHeight: 1 }}>
           ICCT
         </span>
-        <span
-          style={{
-            ...NAV_SUBTEXT_STYLE,
-            fontFamily:    'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif',
-            fontSize:      '0.9rem',
-            letterSpacing: '0.05em',
-            lineHeight:    1,
-            textTransform: 'uppercase',
-          }}
-        >
+        <span style={{ ...NAV_SUBTEXT_STYLE, fontFamily: 'Impact, Haettenschweiler, Arial Narrow Bold, sans-serif', fontSize: '0.9rem', letterSpacing: '0.05em', lineHeight: 1, textTransform: 'uppercase' }}>
           COLLEGES
         </span>
       </div>
@@ -564,20 +576,14 @@ function NavLinks({ navigate, onNavigate }) {
   return (
     <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-10">
       {[
-        { label: 'Home',         path: '/home' },
+        { label: 'Home', path: '/home' },
         { label: 'Announcement', path: '/announcements' },
-        { label: 'Documents',    path: '/requirements' },
+        { label: 'Documents', path: '/requirements' },
       ].map(({ label, path }) => (
         <span
           key={path}
           onClick={() => { navigate(path); onNavigate?.() }}
-          style={{
-            ...NAV_TEXT_STYLE,
-            fontSize:      '0.8rem',
-            letterSpacing: '0.2em',
-            cursor:        'pointer',
-            textTransform: 'uppercase',
-          }}
+          style={{ ...NAV_TEXT_STYLE, fontSize: '0.8rem', letterSpacing: '0.2em', cursor: 'pointer', textTransform: 'uppercase' }}
           className="hover:opacity-70 transition-opacity"
         >
           {label}

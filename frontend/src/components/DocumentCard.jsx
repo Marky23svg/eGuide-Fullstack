@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { jsPDF } from 'jspdf'
 import { saved as savedApi } from '../services/api'
 import { getUser } from '../utils/authStorage'
@@ -18,7 +18,6 @@ const parseItems = (text) =>
     return { id, text: line, type: 'item' }
   })
 
-// ── PDF generator ─────────────────────────────────────────────────────────────
 const downloadPDF = (title, requirements, steps) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
@@ -28,14 +27,10 @@ const downloadPDF = (title, requirements, steps) => {
   let y = 0
 
   const checkPage = (needed = 10) => {
-    if (y + needed > pageH - margin) {
-      doc.addPage()
-      y = margin
-    }
+    if (y + needed > pageH - margin) { doc.addPage(); y = margin }
   }
 
-  // ── Header bar ──
-  doc.setFillColor(26, 86, 219) // blue-600
+  doc.setFillColor(26, 86, 219)
   doc.rect(0, 0, pageW, 28, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(16)
@@ -45,7 +40,6 @@ const downloadPDF = (title, requirements, steps) => {
   doc.setFont('helvetica', 'normal')
   doc.text('Document Procedure Guide', margin, 20)
 
-  // ── Title ──
   y = 40
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(18)
@@ -54,13 +48,11 @@ const downloadPDF = (title, requirements, steps) => {
   doc.text(titleLines, margin, y)
   y += titleLines.length * 8 + 4
 
-  // ── Divider ──
   doc.setDrawColor(229, 231, 235)
   doc.setLineWidth(0.4)
   doc.line(margin, y, pageW - margin, y)
   y += 8
 
-  // ── Requirements section ──
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(26, 86, 219)
@@ -80,13 +72,10 @@ const downloadPDF = (title, requirements, steps) => {
 
   y += 4
   checkPage(10)
-
-  // ── Divider ──
   doc.setDrawColor(229, 231, 235)
   doc.line(margin, y, pageW - margin, y)
   y += 8
 
-  // ── Procedure section ──
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(26, 86, 219)
@@ -99,14 +88,12 @@ const downloadPDF = (title, requirements, steps) => {
 
   steps.forEach((step, i) => {
     checkPage(10)
-    // Step number circle area
     doc.setFillColor(239, 246, 255)
     doc.roundedRect(margin, y - 4, 7, 7, 1, 1, 'F')
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
     doc.setTextColor(26, 86, 219)
     doc.text(String(i + 1), margin + 2.5, y + 0.5)
-
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(55, 65, 81)
@@ -115,7 +102,6 @@ const downloadPDF = (title, requirements, steps) => {
     y += lines.length * 6 + 4
   })
 
-  // ── Footer on every page ──
   const totalPages = doc.internal.getNumberOfPages()
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p)
@@ -143,7 +129,6 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
   const reqOnly = reqItems.filter(i => i.type === 'item')
   const stepOnly = stepItems.filter(i => i.type === 'item')
 
-  // Priority: server progress → localStorage → all false
   const getInitialChecked = () => {
     if (initialProgress?.steps) return initialProgress.steps
     const ls = localStorage.getItem(storageKey)
@@ -162,19 +147,14 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
   const [checked, setChecked] = useState(getInitialChecked)
   const [reqChecked, setReqChecked] = useState(getInitialReqChecked)
 
-  // Sync to server + localStorage — debounced 500ms to avoid spamming on rapid clicks
   const syncProgress = (newSteps, newReqs) => {
     const progress = { steps: newSteps, reqs: newReqs }
-    // Always keep localStorage as instant local fallback
     localStorage.setItem(storageKey, JSON.stringify(progress))
     onProgressChange?.(title, newSteps.filter(Boolean).length / (stepOnly.length || 1))
-
     if (!requirementId) return
     clearTimeout(syncTimerRef.current)
     syncTimerRef.current = setTimeout(() => {
-      savedApi.updateProgress(requirementId, progress).catch(() => {
-        // Silent fail — localStorage already saved
-      })
+      savedApi.updateProgress(requirementId, progress).catch(() => {})
     }, 500)
   }
 
@@ -214,9 +194,7 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
       <div
         onClick={() => setOpen(true)}
         className={`rounded-2xl border flex flex-col overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.13)] ${
-          allDone
-            ? 'bg-green-50 border-green-200'
-            : 'bg-white border-gray-100'
+          allDone ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'
         }`}
       >
         {/* Title area */}
@@ -231,8 +209,23 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
           )}
         </div>
 
-        {/* Progress bars */}
+        {/* Progress section */}
         <div className="mt-auto px-5 pb-5 pt-3 border-t border-gray-100 flex flex-col gap-3">
+          {/* Overall progress summary */}
+          {!allDone && (reqCompletedCount > 0 || completedCount > 0) && (
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-400 rounded-full transition-all duration-500"
+                  style={{ width: `${((reqCompletedCount + completedCount) / (reqOnly.length + stepOnly.length || 1)) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-400 font-medium shrink-0">
+                {reqCompletedCount + completedCount}/{reqOnly.length + stepOnly.length} total
+              </span>
+            </div>
+          )}
+
           {/* What you need bar */}
           <div>
             <div className="flex justify-between text-xs font-medium mb-1">
@@ -241,7 +234,7 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-green-500' : 'bg-gray-200'}`}
+                className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`}
                 style={{ width: `${reqPct}%` }}
               />
             </div>
@@ -332,7 +325,7 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
             {/* Scrollable content */}
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-6">
 
-              {/* What you need */}
+              {/* ── WHAT YOU NEED ── */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400">What you need</p>
@@ -344,11 +337,11 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
                       const ns = NOTE_STYLES[req.severity || 'normal']
                       const isPlain = req.severity === 'plain'
                       return (
-                        <li key={i} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border ${
+                        <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
                           isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
                         }`}>
-                          <div className={`shrink-0 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
-                          <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{req.text}</p>
+                          <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                          <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{req.text}</p>
                         </li>
                       )
                     }
@@ -363,7 +356,12 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
                         }`}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`shrink-0 w-2 h-2 rounded-full ${reqChecked[ri] ? 'bg-green-400' : 'bg-gray-300'}`} />
+                          {/* Plain number — no circle */}
+                          <span className={`shrink-0 text-xs font-bold w-4 text-right ${
+                            reqChecked[ri] ? 'text-green-400' : 'text-gray-400'
+                          }`}>
+                            {ri + 1}.
+                          </span>
                           <p className={`text-sm leading-relaxed ${reqChecked[ri] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
                             {req.text}
                           </p>
@@ -386,7 +384,7 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
 
               <div className="border-t border-gray-100" />
 
-              {/* Procedure */}
+              {/* ── PROCEDURE ── */}
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Procedure</p>
                 <ol className="flex flex-col gap-2">
@@ -398,8 +396,8 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
                         <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
                           isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
                         }`}>
-                          <div className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
-                          <p className={`text-sm font-bold leading-relaxed ${ns.text}`}>{step.text}</p>
+                          <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                          <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{step.text}</p>
                         </li>
                       )
                     }
@@ -407,26 +405,26 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
                     return (
                       <li
                         key={i}
-                        className={`flex items-start gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
                           checked[si]
                             ? 'bg-blue-50 border-blue-200'
                             : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'
                         }`}
                         onClick={() => toggleStep(si)}
                       >
-                        <div className={`shrink-0 mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
-                          checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-200 bg-white'
+                        {/* Checkbox */}
+                        <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
+                          checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-300 bg-white'
                         }`}>
                           {checked[si] && <span className="text-white text-xs font-black">✓</span>}
                         </div>
-                        <div className="flex items-start gap-2 flex-1">
-                          <span className={`shrink-0 text-xs font-black ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>
-                            {si + 1}.
-                          </span>
-                          <p className={`text-sm leading-relaxed ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                            {step.text}
-                          </p>
-                        </div>
+                        {/* Plain number — no circle */}
+                        <span className={`shrink-0 text-xs font-bold w-4 text-right ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {si + 1}.
+                        </span>
+                        <p className={`text-sm leading-relaxed flex-1 ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
+                          {step.text}
+                        </p>
                       </li>
                     )
                   })}

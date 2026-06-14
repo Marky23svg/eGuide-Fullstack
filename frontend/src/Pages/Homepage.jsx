@@ -213,7 +213,7 @@ function Homepage() {
               {selectedAnnouncement.fullDetails && (
                 <div>
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-500 mb-2">Full Details</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{selectedAnnouncement.fullDetails}</p>
+                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{selectedAnnouncement.fullDetails}</p>
                 </div>
               )}
               {!selectedAnnouncement.description && !selectedAnnouncement.fullDetails && (
