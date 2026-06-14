@@ -47,7 +47,7 @@ function AdminDashboard() {
 
       {/* Welcome */}
       <div className="mb-6">
-        <h2 className="text-lg font-black text-gray-800">Welcome back, Admin 👋</h2>
+        <h2 className="text-lg font-black text-gray-800">Welcome back, Admin</h2>
         <p className="text-sm text-gray-400 mt-0.5">Here's what's happening in your system today.</p>
       </div>
 

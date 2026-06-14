@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
                 .sort({ date_posted: -1 })
                 .skip(offset)
                 .limit(limit)
-                .select('title description category date image date_posted content'),
+                ,
             Announcement.countDocuments(),
         ]);
 

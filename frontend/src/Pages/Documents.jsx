@@ -140,7 +140,7 @@ function Documents() {
           <h1 className="text-3xl sm:text-4xl font-black text-white uppercase" style={{ fontFamily: 'Montserrat, sans-serif', letterSpacing: '0.02em' }}>
             Documents
           </h1>
-          <p className="text-white/50 text-sm mt-2">Track and manage your documents in one place.</p>
+          <p className="text-white text-sm mt-2">Track and manage your documents in one place.</p>
         </div>
       </div>
 

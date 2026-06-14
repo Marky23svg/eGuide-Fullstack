@@ -372,7 +372,7 @@ return (
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   required
                 />
@@ -430,7 +430,7 @@ return (
                   type={showRegPassword ? 'text' : 'password'}
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Create password"
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   required
                 />
@@ -458,7 +458,7 @@ return (
                   type={showRegConfirm ? 'text' : 'password'}
                   value={regConfirm}
                   onChange={(e) => setRegConfirm(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Confirm password"
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                   required
                 />
@@ -597,7 +597,7 @@ return (
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Create password"
                         className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
@@ -610,7 +610,7 @@ return (
                         type="password"
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
-                        placeholder="••••••••"
+                        placeholder="Confirm password"
                         className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />

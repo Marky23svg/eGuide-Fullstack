@@ -1,8 +1,8 @@
 import { forwardRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'motion/react'
 import icctLogo from '../assets/Icctlogo.webp'
 import facebookIcon from '../assets/facebookfooter.svg'
-import tiktokIcon from '../assets/tiktokfooter.svg'
 import youtubeIcon from '../assets/youtubefooter.svg'
 
 const Footer = forwardRef((props, ref) => {
@@ -15,6 +15,7 @@ const Footer = forwardRef((props, ref) => {
     { label: 'Terms of Service', path: '/terms' },
     { label: 'Privacy Policy', path: '/privacy' },
   ]
+
   return (
     <footer ref={ref} className="relative bg-gray-950 text-white overflow-hidden">
 
@@ -30,7 +31,13 @@ const Footer = forwardRef((props, ref) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pb-12 border-b border-white/10">
 
           {/* Column 1 — Logo + tagline + socials */}
-          <div className="footer-col flex flex-col gap-5">
+          <motion.div
+            className="footer-col flex flex-col gap-5"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0 }}
+          >
             <div className="flex items-center gap-3">
               <img
                 src={icctLogo}
@@ -74,10 +81,16 @@ const Footer = forwardRef((props, ref) => {
                 </a>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Column 2 — Quick links */}
-          <div className="footer-col flex flex-col gap-5">
+          <motion.div
+            className="footer-col flex flex-col gap-5"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.15 }}
+          >
             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Quick Links</h4>
             <div className="flex flex-col gap-3">
               {quickLinks.map(({ label, path }) => (
@@ -91,10 +104,16 @@ const Footer = forwardRef((props, ref) => {
                 </span>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Column 3 — Contact */}
-          <div className="footer-col flex flex-col gap-5">
+          <motion.div
+            className="footer-col flex flex-col gap-5"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+          >
             <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Contact Us</h4>
             <div className="flex flex-col gap-4">
               <div>
@@ -110,7 +129,7 @@ const Footer = forwardRef((props, ref) => {
                 <p className="text-white/50 text-sm">Mon – Sat: 8:00 AM – 5:00 PM<br />Except on holidays</p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
         </div>
 
@@ -119,7 +138,6 @@ const Footer = forwardRef((props, ref) => {
           <p className="text-white/20 text-xs">
             © {new Date().getFullYear()} ICCT Colleges. All rights reserved.
           </p>
-         
         </div>
 
       </div>
