@@ -11,6 +11,7 @@ function Announcements() {
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('newest')
   const [selected, setSelected] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
 
   useEffect(() => {
     API.get('/announcements')
@@ -119,24 +120,24 @@ function Announcements() {
       {/* Modal */}
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setSelected(null)}
         >
           <div
-            className="relative bg-white w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
+            className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
             {/* Hero image / header */}
             <div className="relative shrink-0">
               {selected.image ? (
-                <img src={selected.image} alt={selected.title} className="w-full h-48 object-cover" />
+                <img src={selected.image} alt={selected.title} className="w-full h-72 object-cover" />
               ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                <div className="w-full h-72 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
                   <span className="text-5xl">📢</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-5 right-10">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-5 right-10 pointer-events-none">
                 {selected.category && (
                   <span className="text-xs font-bold uppercase tracking-widest text-blue-300">{selected.category}</span>
                 )}
@@ -147,6 +148,15 @@ function Announcements() {
                     : new Date(selected.date_posted).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
+              {/* Fullscreen button bottom-left */}
+              {selected.image && (
+                <button
+                  onClick={e => { e.stopPropagation(); setLightbox(selected.image); }}
+                  className="absolute bottom-3 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  ⛶
+                </button>
+              )}
               <button
                 onClick={() => setSelected(null)}
                 className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-sm transition"
@@ -210,6 +220,22 @@ function Announcements() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[310] flex items-center justify-center bg-black/95"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} alt="Full size" className="max-w-full max-h-full object-contain p-4" />
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center text-sm transition"
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>

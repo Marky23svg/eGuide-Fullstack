@@ -18,6 +18,7 @@ function Homepage() {
   const navigate = useNavigate()
   const [announcements, setAnnouncements] = useState([])
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null)
+  const [lightbox, setLightbox] = useState(null)
 
   useEffect(() => {
     API.get('/announcements').then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? [])).catch(() => {})
@@ -176,29 +177,37 @@ function Homepage() {
       {/* ── MODAL POPUP ── */}
       {selectedAnnouncement && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setSelectedAnnouncement(null)}
         >
           <div
-            className="relative bg-white w-full max-w-lg mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
+            className="relative bg-white w-full max-w-2xl mx-4 rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative shrink-0">
               {selectedAnnouncement.image ? (
-                <img src={selectedAnnouncement.image} alt={selectedAnnouncement.title} className="w-full h-48 object-cover" />
+                <img src={selectedAnnouncement.image} alt={selectedAnnouncement.title} className="w-full h-72 object-cover" />
               ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
+                <div className="w-full h-72 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
                   <span className="text-5xl">📢</span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-4 left-5 right-10">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute bottom-4 left-5 right-10 pointer-events-none">
                 {selectedAnnouncement.category && (
                   <span className="text-xs font-bold uppercase tracking-widest text-blue-300">{selectedAnnouncement.category}</span>
                 )}
                 <h3 className="text-xl font-black text-white leading-tight mt-1">{selectedAnnouncement.title}</h3>
                 <p className="text-white/50 text-xs mt-1">{selectedAnnouncement.date || new Date(selectedAnnouncement.date_posted).toLocaleDateString()}</p>
               </div>
+              {selectedAnnouncement.image && (
+                <button
+                  onClick={e => { e.stopPropagation(); setLightbox(selectedAnnouncement.image); }}
+                  className="absolute bottom-3 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition"
+                >
+                  ⛶
+                </button>
+              )}
               <button
                 onClick={() => setSelectedAnnouncement(null)}
                 className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-sm transition backdrop-blur-sm"
@@ -250,6 +259,22 @@ function Homepage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-[310] flex items-center justify-center bg-black/95"
+          onClick={() => setLightbox(null)}
+        >
+          <img src={lightbox} alt="Full size" className="max-w-full max-h-full object-contain p-4" />
+          <button
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center text-sm transition"
+          >
+            ✕
+          </button>
         </div>
       )}
 
