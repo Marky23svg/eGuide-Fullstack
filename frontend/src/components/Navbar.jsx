@@ -230,7 +230,7 @@ function Navbar() {
     top: '15px',
     right: '16px',
     width: profileOpen ? '228px' : '40px',
-    height: profileOpen ? '180px' : '40px',
+    height: profileOpen ? '130px' : '40px',
     borderRadius: profileOpen ? '20px' : '50%',
     background: profileOpen ? 'rgba(255,255,255,0.94)' : 'rgba(37,99,235,0.95)',
     backdropFilter: profileOpen ? 'blur(20px) saturate(180%)' : 'none',
@@ -344,29 +344,6 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
   const userInitial = (userName.charAt(0) || 'U').toUpperCase()
   const role = user.role || 'student'
 
-  // Document progress
-  const [docProgress, setDocProgress] = useState({ completed: 0, total: 0, loaded: false })
-
-  useEffect(() => {
-    if (!profileOpen) return
-    Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/requirements?limit=100`).then(r => r.json()).catch(() => ({ data: [] })),
-      fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/saved`, {
-        headers: { Authorization: `Bearer ${sessionStorage.getItem('token') || localStorage.getItem('token')}` }
-      }).then(r => r.json()).catch(() => ({ data: [] })),
-    ]).then(([reqRes, savedRes]) => {
-      const reqs = reqRes.data || reqRes || []
-      const saved = savedRes.data || savedRes || []
-      const total = Array.isArray(reqs) ? reqs.length : 0
-      // Only count as done if ALL steps in progress are checked
-      const completed = Array.isArray(saved) ? saved.filter(item => {
-        const steps = item.progress?.steps
-        return Array.isArray(steps) && steps.length > 0 && steps.every(Boolean)
-      }).length : 0
-      setDocProgress({ completed, total, loaded: true })
-    }).catch(() => setDocProgress({ completed: 0, total: 0, loaded: true }))
-  }, [profileOpen])
-
   // Derive current page label from path
   const pageLabels = { '/home': 'Home', '/announcements': 'Announcements', '/requirements': 'Documents' }
   const currentPage = pageLabels[location?.pathname] || 'eGuide'
@@ -378,8 +355,6 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
     if (isNaN(d.getTime())) return null
     return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
   })()
-
-  const docPct = docProgress.total > 0 ? Math.round((docProgress.completed / docProgress.total) * 100) : 0
 
   return (
     <>
@@ -496,36 +471,6 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
           <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>Member since {memberSince}</span>
         </div>
       )}
-
-      {/* Document progress bar */}
-      <div
-        style={{
-          position: 'absolute',
-          top: memberSince ? '126px' : '106px',
-          left: '12px', right: '12px',
-          direction: 'ltr',
-          opacity: profileOpen ? 1 : 0,
-          transform: profileOpen ? 'translateY(0)' : 'translateY(6px)',
-          transition: profileOpen ? 'opacity 0.2s ease 0.33s, transform 0.2s ease 0.33s' : 'opacity 0.05s ease',
-          pointerEvents: 'none',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-          <span style={{ fontSize: '10px', color: '#6b7280', fontWeight: '600' }}>📄 Documents</span>
-          <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>
-            {docProgress.loaded ? `${docProgress.completed}/${docProgress.total} done` : '...'}
-          </span>
-        </div>
-        <div style={{ width: '100%', height: '5px', background: '#f3f4f6', borderRadius: '99px', overflow: 'hidden' }}>
-          <div style={{
-            height: '100%',
-            width: `${docPct}%`,
-            borderRadius: '99px',
-            background: docPct === 100 ? '#22c55e' : '#3b82f6',
-            transition: 'width 0.6s ease',
-          }} />
-        </div>
-      </div>
 
       {/* Logout */}
       <div

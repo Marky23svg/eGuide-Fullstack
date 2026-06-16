@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import loginBg from '../assets/Login_bg.webp'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
@@ -43,6 +43,9 @@ function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  // Timer state
+  const [resendTimer, setResendTimer] = useState(0);
+
   // Sign up form states
   const [regName, setRegName] = useState('')
   const [regEmail, setRegEmail] = useState('')
@@ -66,6 +69,19 @@ function Login() {
   const [forgotError, setForgotError] = useState('')
   const [forgotSuccess, setForgotSuccess] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
+
+  // Calculate if button should be disabled
+  const isPasswordValid = validatePasswordStrength(newPassword) === null;
+  const doPasswordsMatch = newPassword === confirmNewPassword && newPassword !== '';
+  const isResetDisabled = forgotLoading || !isPasswordValid || !doPasswordsMatch;
+
+  useEffect(() => {
+    let interval;
+    if (resendTimer > 0) {
+        interval = setInterval(() => setResendTimer((t) => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   const getApiErrorMessage = (error, fallback = 'Unable to connect to the server. Please try again.') => {
     if (!error) return fallback
@@ -171,20 +187,33 @@ function Login() {
 
   // Step 1 — sends code to email
   const handleForgotEmail = async (e) => {
-    e.preventDefault()
-    setForgotError('')
-    setForgotSuccess('')
-    setForgotLoading(true)
+    e.preventDefault();
+    setForgotError(''); // Clear previous errors
+    setForgotSuccess(''); // Clear previous success messages
+    setForgotLoading(true); // Show loading state
     try {
-      await API.post('/auth/forgot-password', { email: forgotEmail })
-      setForgotSuccess('Reset code sent! Check your email.')
-      setForgotStep('code')
-    } catch (error) {
-      setForgotError(getApiErrorMessage(error, 'No account found with this email'))
-    } finally {
-      setForgotLoading(false)
+    const response = await API.post('/auth/forgot-password', { email: forgotEmail });
+    
+    if (response.success) {
+      if (response.wait) { // Check if the backend sent a 'wait' property
+          setResendTimer(response.wait);
+          setForgotSuccess(response.message); // Show the message from backend with wait
+      } else {
+          setForgotSuccess(response.message || 'If an account exists, a reset code has been sent.');
+          setForgotStep('code'); // Only proceed to code step if no wait period
+      }
+    } else {
+        // This case should ideally not be hit with the new backend logic for 200 OK responses,
+        // but included for robustness if a 200 with success:false is explicitly returned.
+        setForgotError(response.message || 'Failed to send reset code. Please try again.');
     }
+  } catch (error) {
+    // This catch block handles non-2xx status codes (like 500, but not 404 anymore)
+    setForgotError(getApiErrorMessage(error, 'An error occurred while sending the reset code.'));
+  } finally {
+    setForgotLoading(false);
   }
+};
 
   // Step 2 — verifies the code sent to email
   const handleForgotCode = async (e) => {
@@ -548,10 +577,10 @@ return (
                   </div>
                   <button
                     type="submit"
-                    disabled={forgotLoading}
-                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={forgotLoading || resendTimer > 0}
+                    className={`... ${resendTimer > 0 ? 'bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed': 'bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed'}`}
                   >
-                    {forgotLoading ? 'Sending...' : 'Send Code'}
+                    {forgotLoading ? 'Sending...' : resendTimer > 0 ? `Wait ${resendTimer}s` : 'Send Code'}
                   </button>
                 </form>
               </>
@@ -587,11 +616,9 @@ return (
             )}
             {forgotStep === 'reset' && (
               <>
-                <div className="text-center mb-2">
-                  <p className="font-semibold text-gray-700">Reset Password</p>
-                  <p className="text-xs text-gray-400">Enter your new password below</p>
-                </div>
+              {/* ... Title ... */}
                 <form onSubmit={handleResetPassword} className="flex flex-col gap-4">
+                  {/* New Password Input */}
                   <div>
                     <label className="block text-sm font-medium mb-1">New Password</label>
                     <div className="relative">
@@ -600,14 +627,32 @@ return (
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Create password"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                         required
                       />
                       <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
                         {showNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                       </button>
                     </div>
+                    {/* Password requirements text */}
+                    <p className="text-xs text-gray-400 mt-1">
+                      At least 8 characters, including one uppercase, one lowercase, one number, and one special character.
+                    </p>
+                    {/* Password strength bar - ONLY SHOW IF PASSWORD IS NOT EMPTY */}
+                    {newPassword && (() => { // Conditionally render if newPassword has a value
+                      const s = getStrength(newPassword);
+                      return (
+                        <div className="mt-1.5">
+                          <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-300 ${s.color} ${s.width}`} />
+                          </div>
+                          <p className={`text-xs mt-0.5 font-semibold ${s.text}`}>{s.label}</p>
+                        </div>
+                      );
+                    })()}
                   </div>
+
+                  {/* Confirm New Password Input */}
                   <div>
                     <label className="block text-sm font-medium mb-1">Confirm New Password</label>
                     <div className="relative">
@@ -616,18 +661,24 @@ return (
                         value={confirmNewPassword}
                         onChange={(e) => setConfirmNewPassword(e.target.value)}
                         placeholder="Confirm password"
-                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
                         required
                       />
                       <button type="button" onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)} className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600">
                         {showConfirmNewPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                       </button>
                     </div>
+                    {/* Passwords do not match warning - ONLY SHOW IF confirmNewPassword is not empty and they don't match */}
+                    {confirmNewPassword && !doPasswordsMatch && (
+                      <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+                    )}
                   </div>
+
                   <button
                     type="submit"
-                    disabled={forgotLoading}
-                    className="bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isResetDisabled}
+                    className={`w-full py-2 rounded-lg font-semibold text-white transition shadow-[0_4px_6px_rgba(0,0,0,0.15)] 
+                      ${isResetDisabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >
                     {forgotLoading ? 'Resetting...' : 'Reset Password'}
                   </button>

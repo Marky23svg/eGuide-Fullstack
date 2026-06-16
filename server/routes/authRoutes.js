@@ -197,29 +197,28 @@ router.post('/login', async (req, res) => {
 // ── Forgot Password ───────────────────────────────────────────────────────────
 
 // Step 1: generate + queue reset code (with cooldown to prevent abuse)
+
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-
-        const user = await User.findOne({ email, pendingSignup: { $ne: true } });
-        if (!user) {
-            // Always return success to prevent email enumeration
-            return res.json({ success: true, message: 'If an account exists, a reset code has been sent.' });
-        }
-
-        // Cooldown: don't send another code if one was sent within the last 60 seconds
-        if (user.resetCodeExpires) {
-            const sentAt = user.resetCodeExpires.getTime() - 10 * 60 * 1000;
-            const elapsed = Date.now() - sentAt;
-            if (elapsed < OTP_RESEND_COOLDOWN_MS) {
-                const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
-                return res.status(429).json({
-                    success: false,
-                    message: `Please wait ${waitSec} second(s) before requesting another reset code.`,
-                });
+        const user = await User.findOne({ email });
+        
+        if (user) {
+            // Check cooldown ONLY if user exists
+            if (user.resetCodeExpires) {
+                const lastSent = new Date(user.resetCodeExpires.getTime() - 10 * 60 * 1000);
+                const elapsed = Date.now() - lastSent.getTime();
+                
+                if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+                    const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
+                    // Still return generic success for enumeration protection, but also send wait time
+                    return res.json({ 
+                        success: true, // Keep it true, but frontend will handle the wait
+                        message: `If an account exists, a reset code has been sent. Please wait ${waitSec}s to resend.`,
+                        wait: waitSec 
+                    });
             }
         }
-
         const resetCode = generateCode();
         user.resetCode = resetCode;
         user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -230,10 +229,11 @@ router.post('/forgot-password', async (req, res) => {
             'Password Reset Code - eGuide System',
             otpEmailHtml(resetCode, 'Password Reset Code', 'Use the code below to reset your password. It expires in <strong>10 minutes</strong>.')
         );
-
+        }
         res.json({ success: true, message: 'Reset code sent to your email.' });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        onsole.error("Forgot password error:", error); // Log the actual error for debugging
+        res.status(500).json({ success: false, message: 'An unexpected error occurred. Please try again.' });
     }
 });
 

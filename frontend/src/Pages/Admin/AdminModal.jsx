@@ -26,6 +26,7 @@ function AdminModal() {
 
         return (
              <AdminLayout activePage="Students">
+                <p className="text-sm text-gray-400">{filteredStudents.length} Students</p>
                 <div className="p-4 sm:p-6">
                     <h1 className="text-xl font-bold text-gray-800 mb-4">Student List</h1>
                     <div className="relative mb-4">
