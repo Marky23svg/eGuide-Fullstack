@@ -18,7 +18,7 @@ const parseItems = (text) =>
     return { id, text: line, type: 'item' }
   })
 
-const downloadPDF = (title, requirements, steps) => {
+const downloadPDF = (title, description, requirements, steps) => {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
@@ -26,101 +26,53 @@ const downloadPDF = (title, requirements, steps) => {
   const contentW = pageW - margin * 2
   let y = 0
 
-  const checkPage = (needed = 10) => {
-    if (y + needed > pageH - margin) { doc.addPage(); y = margin }
-  }
+  const checkPage = (needed = 10) => { if (y + needed > pageH - margin) { doc.addPage(); y = margin } }
 
-  doc.setFillColor(26, 86, 219)
-  doc.rect(0, 0, pageW, 28, 'F')
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.setTextColor(255, 255, 255)
+  doc.setFillColor(26, 86, 219); doc.rect(0, 0, pageW, 28, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(255, 255, 255)
   doc.text('eGuide ICCT', margin, 12)
-  doc.setFontSize(8)
-  doc.setFont('helvetica', 'normal')
-  doc.text('Document Procedure Guide', margin, 20)
+  doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.text('Document Procedure Guide', margin, 20)
 
   y = 40
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(17, 24, 39)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(17, 24, 39)
   const titleLines = doc.splitTextToSize(title, contentW)
-  doc.text(titleLines, margin, y)
-  y += titleLines.length * 8 + 4
+  doc.text(titleLines, margin, y); y += titleLines.length * 8 + 4
 
-  doc.setDrawColor(229, 231, 235)
-  doc.setLineWidth(0.4)
-  doc.line(margin, y, pageW - margin, y)
-  y += 8
+  if (description) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(107, 114, 128)
+    const descLines = doc.splitTextToSize(description, contentW)
+    doc.text(descLines, margin, y); y += descLines.length * 6 + 6
+  }
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(26, 86, 219)
-  doc.text('WHAT YOU NEED', margin, y)
-  y += 7
+  doc.setDrawColor(229, 231, 235); doc.setLineWidth(0.4); doc.line(margin, y, pageW - margin, y); y += 8
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(26, 86, 219)
+  doc.text('WHAT YOU NEED', margin, y); y += 7
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81)
+  requirements.forEach((req) => { checkPage(8); const lines = doc.splitTextToSize(`• ${req}`, contentW - 4); doc.text(lines, margin + 2, y); y += lines.length * 6 + 2 })
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(55, 65, 81)
-
-  requirements.forEach((req) => {
-    checkPage(8)
-    const lines = doc.splitTextToSize(`• ${req}`, contentW - 4)
-    doc.text(lines, margin + 2, y)
-    y += lines.length * 6 + 2
-  })
-
-  y += 4
-  checkPage(10)
-  doc.setDrawColor(229, 231, 235)
-  doc.line(margin, y, pageW - margin, y)
-  y += 8
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(26, 86, 219)
-  doc.text('PROCEDURE', margin, y)
-  y += 7
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(55, 65, 81)
-
+  y += 4; checkPage(10); doc.setDrawColor(229, 231, 235); doc.line(margin, y, pageW - margin, y); y += 8
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(26, 86, 219)
+  doc.text('PROCEDURE', margin, y); y += 7
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81)
   steps.forEach((step, i) => {
     checkPage(10)
-    doc.setFillColor(239, 246, 255)
-    doc.roundedRect(margin, y - 4, 7, 7, 1, 1, 'F')
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.setTextColor(26, 86, 219)
-    doc.text(String(i + 1), margin + 2.5, y + 0.5)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(55, 65, 81)
-    const lines = doc.splitTextToSize(step, contentW - 12)
-    doc.text(lines, margin + 10, y)
-    y += lines.length * 6 + 4
+    doc.setFillColor(239, 246, 255); doc.roundedRect(margin, y - 4, 7, 7, 1, 1, 'F')
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(26, 86, 219); doc.text(String(i + 1), margin + 2.5, y + 0.5)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81)
+    const lines = doc.splitTextToSize(step, contentW - 12); doc.text(lines, margin + 10, y); y += lines.length * 6 + 4
   })
 
   const totalPages = doc.internal.getNumberOfPages()
   for (let p = 1; p <= totalPages; p++) {
-    doc.setPage(p)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(8)
-    doc.setTextColor(156, 163, 175)
+    doc.setPage(p); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(156, 163, 175)
     doc.text(`eGuide ICCT  ·  Page ${p} of ${totalPages}`, margin, pageH - 8)
     doc.text(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), pageW - margin, pageH - 8, { align: 'right' })
   }
-
   doc.save(`${title.replace(/[^a-z0-9]/gi, '_')}_procedure.pdf`)
 }
 
-function DocumentCard({ requirementId, title, requirements, steps, initialProgress, onProgressChange }) {
-  const getUserId = () => {
-    const parsed = getUser()
-    return parsed?.id || parsed?._id || null
-  }
-
+function DocumentCard({ requirementId, title, description, requirements, steps, initialProgress, onProgressChange }) {
+  const getUserId = () => { const parsed = getUser(); return parsed?.id || parsed?._id || null }
   const storageKey = `doc_progress_${getUserId() || 'anon'}_${title}`
   const syncTimerRef = useRef(null)
 
@@ -135,7 +87,6 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
     if (ls) return JSON.parse(ls).steps || stepOnly.map(() => false)
     return stepOnly.map(() => false)
   }
-
   const getInitialReqChecked = () => {
     if (initialProgress?.reqs) return initialProgress.reqs
     const ls = localStorage.getItem(storageKey)
@@ -153,38 +104,20 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
     onProgressChange?.(title, newSteps.filter(Boolean).length / (stepOnly.length || 1))
     if (!requirementId) return
     clearTimeout(syncTimerRef.current)
-    syncTimerRef.current = setTimeout(() => {
-      savedApi.updateProgress(requirementId, progress).catch(() => {})
-    }, 500)
+    syncTimerRef.current = setTimeout(() => { savedApi.updateProgress(requirementId, progress).catch(() => {}) }, 500)
   }
 
-  const toggleStep = (i) => {
-    const updated = checked.map((v, idx) => idx === i ? !v : v)
-    setChecked(updated)
-    syncProgress(updated, reqChecked)
-  }
-
-  const toggleReq = (i) => {
-    const updated = reqChecked.map((v, idx) => idx === i ? !v : v)
-    setReqChecked(updated)
-    syncProgress(checked, updated)
-  }
-
+  const toggleStep = (i) => { const updated = checked.map((v, idx) => idx === i ? !v : v); setChecked(updated); syncProgress(updated, reqChecked) }
+  const toggleReq = (i) => { const updated = reqChecked.map((v, idx) => idx === i ? !v : v); setReqChecked(updated); syncProgress(checked, updated) }
   const handleRetake = () => {
-    const emptySteps = stepOnly.map(() => false)
-    const emptyReqs = reqOnly.map(() => false)
-    setChecked(emptySteps)
-    setReqChecked(emptyReqs)
-    localStorage.removeItem(storageKey)
-    onProgressChange?.(title, 0)
-    if (requirementId) {
-      savedApi.updateProgress(requirementId, { steps: emptySteps, reqs: emptyReqs }).catch(() => {})
-    }
+    const emptySteps = stepOnly.map(() => false); const emptyReqs = reqOnly.map(() => false)
+    setChecked(emptySteps); setReqChecked(emptyReqs); localStorage.removeItem(storageKey); onProgressChange?.(title, 0)
+    if (requirementId) savedApi.updateProgress(requirementId, { steps: emptySteps, reqs: emptyReqs }).catch(() => {})
   }
 
   const completedCount = checked.filter(Boolean).length
   const reqCompletedCount = reqChecked.filter(Boolean).length
-  const allDone = reqCompletedCount === reqOnly.length && completedCount === stepOnly.length
+  const allDone = reqCompletedCount === reqOnly.length && completedCount === stepOnly.length && (reqOnly.length + stepOnly.length) > 0
   const reqPct = reqOnly.length ? (reqCompletedCount / reqOnly.length) * 100 : 0
   const stepPct = stepOnly.length ? (completedCount / stepOnly.length) * 100 : 0
 
@@ -193,64 +126,38 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
       {/* Card */}
       <div
         onClick={() => setOpen(true)}
-        className={`rounded-2xl border flex flex-col overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.13)] ${
-          allDone ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'
-        }`}
+        className={`rounded-2xl border flex flex-col overflow-hidden cursor-pointer transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.07)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.13)] ${allDone ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}
       >
-        {/* Title area */}
         <div className="px-5 pt-6 pb-4">
-          <h3 className={`text-xl font-black leading-snug line-clamp-2 ${allDone ? 'text-green-700' : 'text-gray-800'}`}>
-            {title}
-          </h3>
-          {allDone && (
-            <span className="inline-flex items-center gap-1 mt-2 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-              ✓ Complete
-            </span>
-          )}
+          <h3 className={`text-xl font-black leading-snug line-clamp-2 ${allDone ? 'text-green-700' : 'text-gray-800'}`}>{title}</h3>
+          {allDone && <span className="inline-flex items-center gap-1 mt-2 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">✓ Complete</span>}
         </div>
 
-        {/* Progress section */}
         <div className="mt-auto px-5 pb-5 pt-3 border-t border-gray-100 flex flex-col gap-3">
-          {/* Overall progress summary */}
           {!allDone && (reqCompletedCount > 0 || completedCount > 0) && (
             <div className="flex items-center gap-2 mb-1">
               <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-400 rounded-full transition-all duration-500"
-                  style={{ width: `${((reqCompletedCount + completedCount) / (reqOnly.length + stepOnly.length || 1)) * 100}%` }}
-                />
+                <div className="h-full bg-blue-400 rounded-full transition-all duration-500" style={{ width: `${((reqCompletedCount + completedCount) / (reqOnly.length + stepOnly.length || 1)) * 100}%` }} />
               </div>
-              <span className="text-xs text-gray-400 font-medium shrink-0">
-                {reqCompletedCount + completedCount}/{reqOnly.length + stepOnly.length} total
-              </span>
+              <span className="text-xs text-gray-400 font-medium shrink-0">{reqCompletedCount + completedCount}/{reqOnly.length + stepOnly.length} total</span>
             </div>
           )}
-
-          {/* What you need bar */}
           <div>
             <div className="flex justify-between text-xs font-medium mb-1">
               <span className={allDone ? 'text-green-600' : 'text-gray-500'}>What you need</span>
               <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{reqCompletedCount}/{reqOnly.length}</span>
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`}
-                style={{ width: `${reqPct}%` }}
-              />
+              <div className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${reqPct}%` }} />
             </div>
           </div>
-
-          {/* Steps bar */}
           <div>
             <div className="flex justify-between text-xs font-medium mb-1">
               <span className={allDone ? 'text-green-600' : 'text-gray-500'}>Steps</span>
               <span className={allDone ? 'text-green-600' : 'text-gray-400'}>{completedCount}/{stepOnly.length}</span>
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : stepPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`}
-                style={{ width: `${stepPct}%` }}
-              />
+              <div className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : stepPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${stepPct}%` }} />
             </div>
           </div>
         </div>
@@ -258,74 +165,33 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
 
       {/* Modal */}
       {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
-          onClick={() => setOpen(false)}
-        >
-          <div
-            className="relative bg-white w-full max-w-lg mx-4 rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.3)] flex flex-col max-h-[90vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal header */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md" onClick={() => setOpen(false)}>
+          <div className="relative bg-white w-full max-w-lg mx-4 rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.3)] flex flex-col max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className={`px-6 pt-6 pb-5 ${allDone ? 'bg-gradient-to-br from-green-50 to-emerald-50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${allDone ? 'text-green-500' : 'text-blue-500'}`}>
-                    Documents
-                  </p>
+                  <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${allDone ? 'text-green-500' : 'text-blue-500'}`}>Documents</p>
                   <h3 className="text-xl font-black text-gray-800 leading-snug">{title}</h3>
+                  {description && <p className="text-sm text-gray-500 mt-1 leading-relaxed">{description}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {allDone && (
-                    <button
-                      onClick={handleRetake}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-orange-200 text-orange-500 hover:bg-orange-50 transition shadow-sm"
-                    >
-                      ↺ Reset
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-gray-400 hover:text-gray-600 transition shadow-sm"
-                  >
-                    ✕
-                  </button>
+                  {allDone && <button onClick={handleRetake} className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-orange-200 text-orange-500 hover:bg-orange-50 transition shadow-sm">↺ Reset</button>}
+                  <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-gray-400 hover:text-gray-600 transition shadow-sm">✕</button>
                 </div>
               </div>
-
-              {/* Modal progress bars */}
               <div className="mt-4 flex flex-col gap-2">
                 <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className={allDone ? 'text-green-500' : 'text-gray-500'}>What you need</span>
-                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{reqCompletedCount}/{reqOnly.length}</span>
-                  </div>
-                  <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-green-500' : 'bg-gray-200'}`}
-                      style={{ width: `${reqPct}%` }}
-                    />
-                  </div>
+                  <div className="flex justify-between text-xs font-medium mb-1"><span className={allDone ? 'text-green-500' : 'text-gray-500'}>What you need</span><span className={allDone ? 'text-green-500' : 'text-gray-400'}>{reqCompletedCount}/{reqOnly.length}</span></div>
+                  <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-700 ${allDone ? 'bg-green-500' : reqPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${reqPct}%` }} /></div>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className={allDone ? 'text-green-500' : 'text-gray-500'}>Steps</span>
-                    <span className={allDone ? 'text-green-500' : 'text-gray-400'}>{completedCount}/{stepOnly.length}</span>
-                  </div>
-                  <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${allDone ? 'bg-green-500' : stepPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`}
-                      style={{ width: `${stepPct}%` }}
-                    />
-                  </div>
+                  <div className="flex justify-between text-xs font-medium mb-1"><span className={allDone ? 'text-green-500' : 'text-gray-500'}>Steps</span><span className={allDone ? 'text-green-500' : 'text-gray-400'}>{completedCount}/{stepOnly.length}</span></div>
+                  <div className="w-full h-2 bg-white/60 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-700 ${allDone ? 'bg-green-500' : stepPct > 0 ? 'bg-blue-500' : 'bg-gray-200'}`} style={{ width: `${stepPct}%` }} /></div>
                 </div>
               </div>
             </div>
 
-            {/* Scrollable content */}
             <div className="overflow-y-auto px-6 py-5 flex flex-col gap-6">
-
-              {/* ── WHAT YOU NEED ── */}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-gray-400">What you need</p>
@@ -334,121 +200,56 @@ function DocumentCard({ requirementId, title, requirements, steps, initialProgre
                 <ul className="flex flex-col gap-2">
                   {reqItems.map((req, i) => {
                     if (req.type === 'note') {
-                      const ns = NOTE_STYLES[req.severity || 'normal']
-                      const isPlain = req.severity === 'plain'
-                      return (
-                        <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
-                          isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
-                        }`}>
-                          <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
-                          <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{req.text}</p>
-                        </li>
-                      )
+                      const ns = NOTE_STYLES[req.severity || 'normal']; const isPlain = req.severity === 'plain'
+                      return <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`}`}>
+                        <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                        <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{req.text}</p>
+                      </li>
                     }
                     const ri = reqOnly.indexOf(req)
-                    return (
-                      <li
-                        key={i}
-                        className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${
-                          reqChecked[ri]
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-gray-50 border-transparent hover:border-green-100 hover:bg-green-50/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {/* Plain number — no circle */}
-                          <span className={`shrink-0 text-xs font-bold w-4 text-right ${
-                            reqChecked[ri] ? 'text-green-400' : 'text-gray-400'
-                          }`}>
-                            {ri + 1}.
-                          </span>
-                          <p className={`text-sm leading-relaxed ${reqChecked[ri] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                            {req.text}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => toggleReq(ri)}
-                          className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 ${
-                            reqChecked[ri]
-                              ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]'
-                              : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'
-                          }`}
-                        >
-                          {reqChecked[ri] ? '✓ Done' : 'Mark Done'}
-                        </button>
-                      </li>
-                    )
+                    return <li key={i} className={`flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 ${reqChecked[ri] ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-transparent hover:border-green-100 hover:bg-green-50/50'}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className={`shrink-0 text-xs font-bold w-4 text-right ${reqChecked[ri] ? 'text-green-400' : 'text-gray-400'}`}>{ri + 1}.</span>
+                        <p className={`text-sm leading-relaxed ${reqChecked[ri] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{req.text}</p>
+                      </div>
+                      <button onClick={() => toggleReq(ri)} className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 ${reqChecked[ri] ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]' : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'}`}>
+                        {reqChecked[ri] ? '✓ Done' : 'Mark Done'}
+                      </button>
+                    </li>
                   })}
                 </ul>
               </div>
 
               <div className="border-t border-gray-100" />
 
-              {/* ── PROCEDURE ── */}
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Procedure</p>
                 <ol className="flex flex-col gap-2">
                   {stepItems.map((step, i) => {
                     if (step.type === 'note') {
-                      const ns = NOTE_STYLES[step.severity || 'normal']
-                      const isPlain = step.severity === 'plain'
-                      return (
-                        <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${
-                          isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`
-                        }`}>
-                          <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
-                          <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{step.text}</p>
-                        </li>
-                      )
+                      const ns = NOTE_STYLES[step.severity || 'normal']; const isPlain = step.severity === 'plain'
+                      return <li key={i} className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${isPlain ? 'bg-gray-50 border-transparent' : `${ns.bg} ${ns.border}`}`}>
+                        <span className={`shrink-0 mt-1.5 w-2 h-2 rounded-full ${isPlain ? 'bg-gray-400' : ns.text.replace('text-', 'bg-')}`} />
+                        <p className={`text-sm font-semibold leading-relaxed ${ns.text}`}>{step.text}</p>
+                      </li>
                     }
                     const si = stepOnly.indexOf(step)
-                    return (
-                      <li
-                        key={i}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${
-                          checked[si]
-                            ? 'bg-blue-50 border-blue-200'
-                            : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'
-                        }`}
-                        onClick={() => toggleStep(si)}
-                      >
-                        {/* Checkbox */}
-                        <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${
-                          checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-300 bg-white'
-                        }`}>
-                          {checked[si] && <span className="text-white text-xs font-black">✓</span>}
-                        </div>
-                        {/* Plain number — no circle */}
-                        <span className={`shrink-0 text-xs font-bold w-4 text-right ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {si + 1}.
-                        </span>
-                        <p className={`text-sm leading-relaxed flex-1 ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>
-                          {step.text}
-                        </p>
-                      </li>
-                    )
+                    return <li key={i} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${checked[si] ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'}`} onClick={() => toggleStep(si)}>
+                      <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-300 bg-white'}`}>{checked[si] && <span className="text-white text-xs font-black">✓</span>}</div>
+                      <span className={`shrink-0 text-xs font-bold w-4 text-right ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>{si + 1}.</span>
+                      <p className={`text-sm leading-relaxed flex-1 ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{step.text}</p>
+                    </li>
                   })}
                 </ol>
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3">
-              <button
-                onClick={(e) => { e.stopPropagation(); downloadPDF(title, requirements, steps) }}
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
-              >
-                ↓ Download PDF
-              </button>
+              <button onClick={e => { e.stopPropagation(); downloadPDF(title, description || '', requirements, steps) }} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm">↓ Download PDF</button>
               {allDone ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-green-500 text-lg">🎉</span>
-                  <p className="text-sm font-bold text-green-600">All done! You're ready.</p>
-                </div>
+                <div className="flex items-center gap-2"><span className="text-green-500 text-lg">🎉</span><p className="text-sm font-bold text-green-600">All done! You're ready.</p></div>
               ) : (
-                <p className="text-xs text-gray-400 text-right">
-                  {reqCompletedCount}/{reqOnly.length} items · {completedCount}/{stepOnly.length} steps
-                </p>
+                <p className="text-xs text-gray-400 text-right">{reqCompletedCount}/{reqOnly.length} items · {completedCount}/{stepOnly.length} steps</p>
               )}
             </div>
           </div>

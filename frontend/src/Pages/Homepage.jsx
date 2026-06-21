@@ -24,6 +24,23 @@ function Homepage() {
     API.get('/announcements').then(res => setAnnouncements(Array.isArray(res) ? res : res.data ?? [])).catch(() => {})
   }, [])
 
+  // Resolve all action buttons for an announcement (supports both new actionButtons[] and legacy actionButton)
+  const resolveButtons = (item) => {
+    if (!item) return []
+    if (Array.isArray(item.actionButtons) && item.actionButtons.length > 0) return item.actionButtons
+    if (item.actionButton?.label) return [{ ...item.actionButton, type: 'url' }]
+    return []
+  }
+
+  const handleButton = (btn) => {
+    if (btn.type === 'document' || btn.documentId) {
+      setSelectedAnnouncement(null)
+      navigate(`/requirements?highlight=${btn.documentId}`, { state: { highlightId: btn.documentId } })
+    } else if (btn.url) {
+      window.open(btn.url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   const heroTitleRef = useRef(null)
   const heroParagraphRef = useRef(null)
   const heroScrollRef = useRef(null)
@@ -244,17 +261,20 @@ function Homepage() {
                   </div>
                 </>
               )}
-              {selectedAnnouncement.actionButton?.label && (
+              {resolveButtons(selectedAnnouncement).filter(b => b.label).length > 0 && (
                 <>
                   <div className="border-t border-gray-100" />
-                  <a
-                    href={selectedAnnouncement.actionButton.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition shadow-[0_4px_15px_rgba(37,99,235,0.4)]"
-                  >
-                    {selectedAnnouncement.actionButton.label} →
-                  </a>
+                  <div className="flex flex-col gap-2">
+                    {resolveButtons(selectedAnnouncement).filter(b => b.label).map((btn, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleButton(btn)}
+                        className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-bold rounded-xl transition ${btn.type === 'document' || btn.documentId ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                      >
+                        {btn.type === 'document' || btn.documentId ? '📄' : '🔗'} {btn.label} →
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
