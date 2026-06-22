@@ -1,5 +1,5 @@
-import './config/config.js'; // ← validates all required env vars at startup
-import 'dotenv/config';
+import 'dotenv/config';         // ← MUST be first
+import './config/config.js';
 
 import express from 'express';
 import cors from 'cors';

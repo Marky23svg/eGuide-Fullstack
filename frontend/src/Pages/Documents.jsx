@@ -203,6 +203,7 @@ function Documents() {
                   key={item._id}
                   requirementId={item._id}
                   title={item.title}
+                  description={item.description || ''}
                   requirements={item.requirements.split('\n').filter(s => s.trim())}
                   steps={item.procedure.split('\n').filter(s => s.trim())}
                   initialProgress={serverProgress[item._id] || null}

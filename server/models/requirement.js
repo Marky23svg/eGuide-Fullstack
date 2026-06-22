@@ -6,6 +6,10 @@ const requirementSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    description: {
+        type: String,
+        default: ''
+    },
     requirements: {
         type: String,
         required: true
@@ -20,7 +24,7 @@ const requirementSchema = new mongoose.Schema({
     }
 });
 
-requirementSchema.index({ title: 'text', requirements: 'text', procedure: 'text' });
+requirementSchema.index({ title: 'text', requirements: 'text', procedure: 'text', description: 'text' });
 requirementSchema.index({ date_posted: -1 });
 
 const Requirement = mongoose.model('Requirement', requirementSchema);
