@@ -331,35 +331,42 @@ router.post('/forgot-password', async (req, res) => {
         const user = await User.findOne({ email });
         
         if (user) {
-            // Check cooldown ONLY if user exists
+            // 1. Define recipientEmail clearly BEFORE using it
+            let recipientEmail = (user.role === 'admin' && config.adminOtpEmail) ? config.adminOtpEmail : email;
+
+            // 2. Cooldown check
             if (user.resetCodeExpires) {
                 const lastSent = new Date(user.resetCodeExpires.getTime() - 10 * 60 * 1000);
                 const elapsed = Date.now() - lastSent.getTime();
                 
                 if (elapsed < OTP_RESEND_COOLDOWN_MS) {
                     const waitSec = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
-                    // Still return generic success for enumeration protection, but also send wait time
                     return res.json({ 
-                        success: true, // Keep it true, but frontend will handle the wait
+                        success: true, 
                         message: `If an account exists, a reset code has been sent. Please wait ${waitSec}s to resend.`,
                         wait: waitSec 
                     });
+                }
             }
-        }
-        const resetCode = generateCode();
-        user.resetCode = resetCode;
-        user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
-        await user.save();
 
-        enqueueEmail(
-            [{ email }],
-            'Password Reset Code - eGuide System',
-            otpEmailHtml(resetCode, 'Password Reset Code', 'Use the code below to reset your password. It expires in <strong>10 minutes</strong>.')
-        );
+            // 3. Generate and save
+            const resetCode = generateCode();
+            user.resetCode = resetCode;
+            user.resetCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+            await user.save();
+
+            // 4. Use the defined recipientEmail
+            enqueueEmail(
+                [{ email: recipientEmail }],
+                'Password Reset Code - eGuide System',
+                otpEmailHtml(resetCode, 'Password Reset Code', 'Use the code below to reset your password. It expires in <strong>10 minutes</strong>.')
+            );
         }
+        
+        // Always send generic success
         res.json({ success: true, message: 'Reset code sent to your email.' });
     } catch (error) {
-        console.error("Forgot password error:", error); // Log the actual error for debugging
+        console.error("Forgot password error:", error);
         res.status(500).json({ success: false, message: 'An unexpected error occurred. Please try again.' });
     }
 });
