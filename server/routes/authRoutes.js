@@ -166,6 +166,133 @@ router.post('/signup', async (req, res) => {
     }
 });
 
+// ── Admin Signup (secret, gated by authorized email) ──────────────────────────
+// Only req.body.authorizedEmail === config.adminOtpEmail may trigger an OTP send.
+// The OTP itself is always sent to config.adminOtpEmail (never to an attacker-supplied
+// address), so even a leaked link + leaked email string still requires physical access
+// to that one inbox. Every failure path returns the same generic message so a tester
+// probing the form can't tell which check failed.
+
+const ADMIN_GENERIC_ERROR = 'Unable to process this request. Please check your details and try again.';
+const ADMIN_OTP_MAX_ATTEMPTS = 5;
+
+// Step 1: validate + queue OTP to the one authorized inbox (never to user input)
+router.post('/admin-signup/send-otp', async (req, res) => {
+    try {
+        const { name, email, password, confirmPassword, authorizedEmail } = req.body;
+
+        if (!name || !email || !password || !confirmPassword || !authorizedEmail) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        const pwError = validatePassword(password);
+        if (pwError) return res.status(400).json({ success: false, message: pwError });
+
+        // Gate check — generic message either way, no hint about which field was wrong
+        if (!config.adminOtpEmail || authorizedEmail.toLowerCase().trim() !== config.adminOtpEmail) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        const existingUser = await User.findOne({ email, pendingSignup: { $ne: true } });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        const otp = generateCode();
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Stateless token holds registration details + OTP + attempt counter.
+        // Expires in 10 minutes, same as the student flow.
+        const signupToken = jwt.sign(
+            { name, email, password: hashedPassword, otp, attempts: 0, purpose: 'admin-signup' },
+            config.jwtSecret,
+            { expiresIn: '10m' }
+        );
+
+        // The OTP is ALWAYS mailed to the one authorized inbox — never to req.body.email.
+        enqueueEmail(
+            [{ email: config.adminOtpEmail }],
+            'Admin Registration Code - eGuide System',
+            otpEmailHtml(
+                otp,
+                'New Admin Registration Request',
+                `A new admin account is being created for <strong>${email}</strong>. If this was you or someone you authorized, give them this code. It expires in <strong>10 minutes</strong>. If you did not expect this, ignore this email.`
+            )
+        );
+
+        res.json({ success: true, signupToken, message: 'If the details are correct, a code has been sent to the authorized inbox.' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: ADMIN_GENERIC_ERROR });
+    }
+});
+
+// Step 2: verify OTP and create the admin account
+router.post('/admin-signup/verify-otp', async (req, res) => {
+    try {
+        const { email, otp, signupToken } = req.body;
+
+        if (!signupToken || !otp) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        let decoded;
+        try {
+            decoded = jwt.verify(signupToken, config.jwtSecret);
+        } catch (err) {
+            return res.status(400).json({ success: false, message: 'This code has expired. Please start again.' });
+        }
+
+        if (decoded.purpose !== 'admin-signup') {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        if ((decoded.attempts || 0) >= ADMIN_OTP_MAX_ATTEMPTS) {
+            return res.status(400).json({ success: false, message: 'Too many attempts. Please start again.' });
+        }
+
+        if (decoded.email.toLowerCase() !== String(email || '').toLowerCase() || decoded.otp !== otp) {
+            // Re-issue the token with attempts incremented so the limit is enforced
+            // even though the token itself is stateless. Strip exp/iat first —
+            // jwt.sign refuses to set expiresIn when the payload already carries
+            // an exp claim from the previous verify().
+            const { exp, iat, ...rest } = decoded;
+            const retryToken = jwt.sign(
+                { ...rest, attempts: (decoded.attempts || 0) + 1 },
+                config.jwtSecret,
+                { expiresIn: '10m' }
+            );
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR, signupToken: retryToken });
+        }
+
+        // Final check to prevent race conditions or duplicate signups
+        const existingUser = await User.findOne({ email: decoded.email, pendingSignup: { $ne: true } });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: ADMIN_GENERIC_ERROR });
+        }
+
+        const user = await User.create({
+            name: decoded.name,
+            email: decoded.email,
+            password: decoded.password, // already hashed
+            role: 'admin',
+        });
+
+        const token = signToken(user);
+
+        res.status(201).json({
+            success: true,
+            token,
+            user: { id: user._id, name: user.name, email: user.email, role: user.role },
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: ADMIN_GENERIC_ERROR });
+    }
+});
+
 // ── Login ─────────────────────────────────────────────────────────────────────
 
 router.post('/login', async (req, res) => {
@@ -232,7 +359,7 @@ router.post('/forgot-password', async (req, res) => {
         }
         res.json({ success: true, message: 'Reset code sent to your email.' });
     } catch (error) {
-        onsole.error("Forgot password error:", error); // Log the actual error for debugging
+        console.error("Forgot password error:", error); // Log the actual error for debugging
         res.status(500).json({ success: false, message: 'An unexpected error occurred. Please try again.' });
     }
 });

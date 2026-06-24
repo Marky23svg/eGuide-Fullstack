@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { MdArrowBack } from 'react-icons/md'
 
 function NotFound() {
   const navigate = useNavigate()
@@ -9,9 +10,9 @@ function NotFound() {
       <p className="text-gray-400 text-sm mb-8 text-center">The page you're looking for doesn't exist or has been moved.</p>
       <button
         onClick={() => navigate(-1)}
-        className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition"
+        className="px-6 py-2.5 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition flex items-center gap-1.5"
       >
-        ← Go Back
+        <MdArrowBack size={16} /> Go Back
       </button>
     </div>
   )

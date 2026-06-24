@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { MdWarning } from 'react-icons/md';
 
 /**
  * Global Error Boundary
@@ -17,7 +18,7 @@ class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     // Log to console in dev; swap for a real error service (Sentry, etc.) in prod
-    console.error('❌ ErrorBoundary caught:', error, info.componentStack);
+    console.error('ErrorBoundary caught:', error, info.componentStack);
   }
 
   handleReload = () => {
@@ -52,7 +53,9 @@ class ErrorBoundary extends Component {
             boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
           }}
         >
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <MdWarning size={48} color="#f59e0b" />
+          </div>
           <h2 style={{ color: '#111827', margin: '0 0 8px', fontSize: '20px', fontWeight: 700 }}>
             Something went wrong
           </h2>

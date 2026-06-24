@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { MdArrowBack } from 'react-icons/md'
 
 function PrivacyPolicy() {
   const navigate = useNavigate()
@@ -85,12 +86,12 @@ function PrivacyPolicy() {
 
         <motion.button
           onClick={() => navigate(-1)}
-          className="mt-6 text-sm text-blue-500 hover:underline cursor-pointer"
+          className="mt-6 text-sm text-blue-500 hover:underline cursor-pointer flex items-center gap-1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
         >
-          ← Back
+          <MdArrowBack size={14} /> Back
         </motion.button>
       </motion.div>
     </div>
