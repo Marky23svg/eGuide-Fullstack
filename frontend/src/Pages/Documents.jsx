@@ -165,8 +165,8 @@ function Documents() {
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="az">A → Z</option>
-            <option value="za">Z → A</option>
+            <option value="az">A to Z</option>
+            <option value="za">Z to A</option>
           </select>
         </div>
       </div>

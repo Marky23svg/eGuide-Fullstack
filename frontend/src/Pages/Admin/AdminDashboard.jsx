@@ -4,6 +4,7 @@ import AdminLayout from './AdminLayout'
 import { FaBullhorn, FaClipboardList, FaUsers } from 'react-icons/fa'
 import { MdAccessTime, MdCheckCircle, MdAdd } from 'react-icons/md'
 import API from '../../services/api'
+import { getUser } from '../../utils/authStorage'
 
 function AdminDashboard() {
   const navigate = useNavigate()
@@ -11,6 +12,9 @@ function AdminDashboard() {
   const [recentAnnouncements, setRecentAnnouncements] = useState([])
   const [recentDocs, setRecentDocs] = useState([])
   const [loading, setLoading] = useState(true)
+
+  const user = getUser()
+  const firstName = (user.name || 'Admin').trim().split(' ')[0]
 
   useEffect(() => {
     const fetch = async () => {
@@ -47,7 +51,7 @@ function AdminDashboard() {
 
       {/* Welcome */}
       <div className="mb-6">
-        <h2 className="text-lg font-black text-gray-800">Welcome back, Admin</h2>
+        <h2 className="text-lg font-black text-gray-800">Welcome back, {firstName}</h2>
         <p className="text-sm text-gray-400 mt-0.5">Here's what's happening in your system today.</p>
       </div>
 

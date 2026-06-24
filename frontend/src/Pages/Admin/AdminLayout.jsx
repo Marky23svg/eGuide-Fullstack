@@ -7,7 +7,7 @@ import {
   MdLogout, MdMenu, MdClose,
 } from 'react-icons/md'
 import { FaUsers } from 'react-icons/fa'
-import { clearAuth } from '../../utils/authStorage'
+import { clearAuth, getUser } from '../../utils/authStorage'
 
 const NAV_ITEMS = [
   { label: 'Dashboard',      icon: MdDashboard,  path: '/admin' },
@@ -23,6 +23,11 @@ function AdminLayout({ children, activePage }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileOpen, setMobileOpen] = useState(false)
   const closeMobile = useCallback(() => setMobileOpen(false), [])
+
+  const user = getUser()
+  const adminName = user.name || 'Admin'
+  const adminEmail = user.email || ''
+  const adminInitial = adminName.trim().charAt(0).toUpperCase() || 'A'
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -122,11 +127,11 @@ function AdminLayout({ children, activePage }) {
           </div>
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-              A
+              {adminInitial}
             </div>
             <div className="hidden sm:flex flex-col leading-none">
-              <p className="text-sm font-semibold text-gray-800">Admin</p>
-              <p className="text-xs text-gray-400">admin@icct.edu.ph</p>
+              <p className="text-sm font-semibold text-gray-800">{adminName}</p>
+              <p className="text-xs text-gray-400">{adminEmail}</p>
             </div>
           </div>
         </header>

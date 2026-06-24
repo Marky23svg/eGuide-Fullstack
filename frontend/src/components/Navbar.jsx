@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import icctLogo from '../assets/Icctlogo.webp'
-import { MdMenu, MdClose } from 'react-icons/md'
+import { MdMenu, MdClose, MdGpsFixed, MdCalendarToday } from 'react-icons/md'
 import { FiLogOut } from 'react-icons/fi'
 import { getUser, clearAuth } from '../utils/authStorage'
 import { IoPerson } from "react-icons/io5";
@@ -399,7 +399,7 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
         }}
         aria-label="Close"
       >
-        ✕
+        <MdClose size={12} />
       </button>
 
       {/* Name + email */}
@@ -449,8 +449,9 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
           fontSize: '10px', fontWeight: '600', letterSpacing: '0.03em',
           padding: '3px 8px', borderRadius: '20px',
           background: '#f3f4f6', color: '#6b7280',
+          display: 'flex', alignItems: 'center', gap: '4px',
         }}>
-          ⚲ {currentPage}
+          <MdGpsFixed size={11} /> {currentPage}
         </span>
       </div>
 
@@ -467,7 +468,7 @@ function CardContent({ profileOpen, onLogout, onClose, location }) {
             display: 'flex', alignItems: 'center', gap: '5px',
           }}
         >
-          <span style={{ fontSize: '10px', color: '#9ca3af' }}>🗓</span>
+          <MdCalendarToday size={10} color="#9ca3af" />
           <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '500' }}>Member since {memberSince}</span>
         </div>
       )}

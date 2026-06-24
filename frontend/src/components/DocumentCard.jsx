@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { jsPDF } from 'jspdf'
 import { saved as savedApi } from '../services/api'
 import { getUser } from '../utils/authStorage'
+import { MdCheck, MdCheckCircle, MdRefresh, MdClose, MdFileDownload, MdCelebration } from 'react-icons/md'
 
 const NOTE_STYLES = {
   strict:   { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-600' },
@@ -130,7 +131,7 @@ function DocumentCard({ requirementId, title, description, requirements, steps, 
       >
         <div className="px-5 pt-6 pb-4">
           <h3 className={`text-xl font-black leading-snug line-clamp-2 ${allDone ? 'text-green-700' : 'text-gray-800'}`}>{title}</h3>
-          {allDone && <span className="inline-flex items-center gap-1 mt-2 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">✓ Complete</span>}
+          {allDone && <span className="inline-flex items-center gap-1 mt-2 bg-green-500 text-white text-xs font-bold px-2.5 py-1 rounded-full"><MdCheckCircle size={13} /> Complete</span>}
         </div>
 
         <div className="mt-auto px-5 pb-5 pt-3 border-t border-gray-100 flex flex-col gap-3">
@@ -175,8 +176,8 @@ function DocumentCard({ requirementId, title, description, requirements, steps, 
                   {description && <p className="text-sm text-gray-500 mt-1 leading-relaxed">{description}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  {allDone && <button onClick={handleRetake} className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-orange-200 text-orange-500 hover:bg-orange-50 transition shadow-sm">↺ Reset</button>}
-                  <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-gray-400 hover:text-gray-600 transition shadow-sm">✕</button>
+                  {allDone && <button onClick={handleRetake} className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white border border-orange-200 text-orange-500 hover:bg-orange-50 transition shadow-sm"><MdRefresh size={14} /> Reset</button>}
+                  <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center text-gray-400 hover:text-gray-600 transition shadow-sm"><MdClose size={16} /></button>
                 </div>
               </div>
               <div className="mt-4 flex flex-col gap-2">
@@ -212,8 +213,8 @@ function DocumentCard({ requirementId, title, description, requirements, steps, 
                         <span className={`shrink-0 text-xs font-bold w-4 text-right ${reqChecked[ri] ? 'text-green-400' : 'text-gray-400'}`}>{ri + 1}.</span>
                         <p className={`text-sm leading-relaxed ${reqChecked[ri] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{req.text}</p>
                       </div>
-                      <button onClick={() => toggleReq(ri)} className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 ${reqChecked[ri] ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]' : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'}`}>
-                        {reqChecked[ri] ? '✓ Done' : 'Mark Done'}
+                      <button onClick={() => toggleReq(ri)} className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 flex items-center gap-1 ${reqChecked[ri] ? 'bg-green-500 text-white shadow-[0_2px_8px_rgba(34,197,94,0.4)]' : 'bg-white border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-500 shadow-sm'}`}>
+                        {reqChecked[ri] ? <><MdCheck size={14} /> Done</> : 'Mark Done'}
                       </button>
                     </li>
                   })}
@@ -235,7 +236,7 @@ function DocumentCard({ requirementId, title, description, requirements, steps, 
                     }
                     const si = stepOnly.indexOf(step)
                     return <li key={i} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all duration-200 cursor-pointer ${checked[si] ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-transparent hover:border-blue-100 hover:bg-blue-50/50'}`} onClick={() => toggleStep(si)}>
-                      <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-300 bg-white'}`}>{checked[si] && <span className="text-white text-xs font-black">✓</span>}</div>
+                      <div className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${checked[si] ? 'bg-blue-500 border-blue-500 shadow-[0_2px_8px_rgba(59,130,246,0.4)]' : 'border-gray-300 bg-white'}`}>{checked[si] && <MdCheck className="text-white" size={14} />}</div>
                       <span className={`shrink-0 text-xs font-bold w-4 text-right ${checked[si] ? 'text-blue-400' : 'text-gray-400'}`}>{si + 1}.</span>
                       <p className={`text-sm leading-relaxed flex-1 ${checked[si] ? 'line-through text-gray-300' : 'text-gray-600'}`}>{step.text}</p>
                     </li>
@@ -245,9 +246,9 @@ function DocumentCard({ requirementId, title, description, requirements, steps, 
             </div>
 
             <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between gap-3">
-              <button onClick={e => { e.stopPropagation(); downloadPDF(title, description || '', requirements, steps) }} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm">↓ Download PDF</button>
+              <button onClick={e => { e.stopPropagation(); downloadPDF(title, description || '', requirements, steps) }} className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"><MdFileDownload size={15} /> Download PDF</button>
               {allDone ? (
-                <div className="flex items-center gap-2"><span className="text-green-500 text-lg">🎉</span><p className="text-sm font-bold text-green-600">All done! You're ready.</p></div>
+                <div className="flex items-center gap-2"><span className="text-green-500 text-lg"><MdCelebration size={20} /></span><p className="text-sm font-bold text-green-600">All done! You're ready.</p></div>
               ) : (
                 <p className="text-xs text-gray-400 text-right">{reqCompletedCount}/{reqOnly.length} items · {completedCount}/{stepOnly.length} steps</p>
               )}

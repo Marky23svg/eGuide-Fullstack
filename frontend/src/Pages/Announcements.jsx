@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import API from '../services/api'
-import { MdSearch, MdSort } from 'react-icons/md'
+import { MdSearch, MdSort, MdCampaign, MdArrowForward, MdZoomIn, MdClose, MdDescription, MdLink } from 'react-icons/md'
 import announcementBg from '../assets/announcementpage_bg.webp'
 
 function Announcements() {
@@ -74,8 +74,8 @@ function Announcements() {
           <select value={sort} onChange={e => setSort(e.target.value)} className="pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm appearance-none">
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
-            <option value="az">A → Z</option>
-            <option value="za">Z → A</option>
+            <option value="az">A to Z</option>
+            <option value="za">Z to A</option>
           </select>
         </div>
       </div>
@@ -91,14 +91,14 @@ function Announcements() {
               const buttons = resolveButtons(item)
               return (
                 <div key={item._id} onClick={() => setSelected(item)} className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer">
-                  {item.image ? <img src={item.image} alt={item.title} className="w-full h-40 object-cover" /> : <div className="w-full h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center"><span className="text-4xl">📢</span></div>}
+                  {item.image ? <img src={item.image} alt={item.title} className="w-full h-40 object-cover" /> : <div className="w-full h-40 bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center"><MdCampaign className="text-white" size={40} /></div>}
                   <div className="p-5 flex flex-col gap-2 flex-1">
                     {item.category && <span className="text-xs font-bold text-blue-500 uppercase tracking-widest">{item.category}</span>}
                     <h3 className="text-sm font-black text-gray-800 leading-snug">{item.title}</h3>
                     <p className="text-xs text-gray-400">{new Date(item.date_posted).toLocaleDateString()}</p>
                     <p className="text-xs text-gray-500 line-clamp-2 mt-1">{item.description || item.content}</p>
                     <div className="mt-auto pt-3">
-                      <span className="text-xs font-bold text-blue-600 hover:underline">Read More →</span>
+                      <span className="text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1">Read More <MdArrowForward size={13} /></span>
                     </div>
                   </div>
                 </div>
@@ -118,7 +118,7 @@ function Announcements() {
               {selected.image ? (
                 <img src={selected.image} alt={selected.title} className="w-full h-72 object-cover" />
               ) : (
-                <div className="w-full h-72 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center"><span className="text-5xl">📢</span></div>
+                <div className="w-full h-72 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center"><MdCampaign className="text-white" size={48} /></div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
               <div className="absolute bottom-4 left-5 right-10 pointer-events-none">
@@ -129,9 +129,9 @@ function Announcements() {
                 </p>
               </div>
               {selected.image && (
-                <button onClick={e => { e.stopPropagation(); setLightbox(selected.image) }} className="absolute bottom-3 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition">⛶</button>
+                <button onClick={e => { e.stopPropagation(); setLightbox(selected.image) }} className="absolute bottom-3 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition"><MdZoomIn size={16} /></button>
               )}
-              <button onClick={() => setSelected(null)} className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-sm transition">✕</button>
+              <button onClick={() => setSelected(null)} className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-sm transition"><MdClose size={16} /></button>
             </div>
 
             <div className="overflow-y-auto flex flex-col gap-5 p-6">
@@ -171,7 +171,7 @@ function Announcements() {
                         onClick={() => handleButton(btn)}
                         className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-bold rounded-xl transition ${btn.type === 'document' || btn.documentId ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                       >
-                        {btn.type === 'document' || btn.documentId ? '📄' : '🔗'} {btn.label} →
+                        {btn.type === 'document' || btn.documentId ? <MdDescription size={16} /> : <MdLink size={16} />} {btn.label} <MdArrowForward size={16} />
                       </button>
                     ))}
                   </div>
@@ -185,7 +185,7 @@ function Announcements() {
       {lightbox && (
         <div className="fixed inset-0 z-[310] flex items-center justify-center bg-black/95" onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="Full size" className="max-w-full max-h-full object-contain p-4" />
-          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center text-sm transition">✕</button>
+          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center text-sm transition"><MdClose size={18} /></button>
         </div>
       )}
     </div>

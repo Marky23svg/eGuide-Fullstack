@@ -13,6 +13,7 @@ import innerArrow from '../assets/InnerArrow.svg'
 gsap.registerPlugin(ScrollTrigger)
 
 import API from '../services/api'
+import { MdCampaign, MdArrowForward, MdZoomIn, MdClose, MdDescription, MdLink } from 'react-icons/md'
 
 function Homepage() {
   const navigate = useNavigate()
@@ -161,7 +162,7 @@ function Homepage() {
                 <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <span className="text-5xl">📢</span>
+                  <MdCampaign className="text-white" size={48} />
                 </div>
               )}
             </div>
@@ -181,9 +182,9 @@ function Homepage() {
           <div className="flex justify-center mt-4">
             <button
               onClick={() => navigate('/announcements')}
-              className="px-8 py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition shadow-[0_4px_15px_rgba(37,99,235,0.4)]"
+              className="px-8 py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 transition shadow-[0_4px_15px_rgba(37,99,235,0.4)] flex items-center gap-1.5"
             >
-              View All Announcements →
+              View All Announcements <MdArrowForward size={16} />
             </button>
           </div>
         )}
@@ -206,7 +207,7 @@ function Homepage() {
                 <img src={selectedAnnouncement.image} alt={selectedAnnouncement.title} className="w-full h-72 object-cover" />
               ) : (
                 <div className="w-full h-72 bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-                  <span className="text-5xl">📢</span>
+                  <MdCampaign className="text-white" size={48} />
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
@@ -222,14 +223,14 @@ function Homepage() {
                   onClick={e => { e.stopPropagation(); setLightbox(selectedAnnouncement.image); }}
                   className="absolute bottom-3 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-black/50 hover:bg-black/70 text-white text-xs font-semibold rounded-lg transition"
                 >
-                  ⛶
+                  <MdZoomIn size={16} />
                 </button>
               )}
               <button
                 onClick={() => setSelectedAnnouncement(null)}
                 className="absolute top-3 right-3 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center text-sm transition backdrop-blur-sm"
               >
-                ✕
+                <MdClose size={16} />
               </button>
             </div>
             <div className="overflow-y-auto flex flex-col gap-5 p-6">
@@ -271,7 +272,7 @@ function Homepage() {
                         onClick={() => handleButton(btn)}
                         className={`flex items-center justify-center gap-2 w-full py-3 text-sm font-bold rounded-xl transition ${btn.type === 'document' || btn.documentId ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                       >
-                        {btn.type === 'document' || btn.documentId ? '📄' : '🔗'} {btn.label} →
+                        {btn.type === 'document' || btn.documentId ? <MdDescription size={16} /> : <MdLink size={16} />} {btn.label} <MdArrowForward size={16} />
                       </button>
                     ))}
                   </div>
@@ -293,7 +294,7 @@ function Homepage() {
             onClick={() => setLightbox(null)}
             className="absolute top-4 right-4 w-9 h-9 bg-white/20 hover:bg-white/40 text-white rounded-full flex items-center justify-center text-sm transition"
           >
-            ✕
+            <MdClose size={18} />
           </button>
         </div>
       )}

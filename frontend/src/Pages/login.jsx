@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import loginBg from '../assets/Login_bg.webp'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import { MdArrowBack } from 'react-icons/md'
 import API from '../services/api'
 import { setAuth } from '../utils/authStorage'
 import { motion } from "motion/react";
@@ -545,9 +546,9 @@ return (
             </button>
             <p
               onClick={() => { setSignupStep('form'); setSignupOtp(''); setSignupError(''); setSignupSuccess('') }}
-              className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
+              className="text-xs text-center text-blue-500 cursor-pointer hover:underline flex items-center justify-center gap-1"
             >
-              ← Back
+              <MdArrowBack size={12} /> Back
             </p>
           </form>
         )}
@@ -687,9 +688,9 @@ return (
             )}
             <p
               onClick={() => { setActiveTab('login'); setForgotStep('email') }}
-              className="text-xs text-center text-blue-500 cursor-pointer hover:underline"
+              className="text-xs text-center text-blue-500 cursor-pointer hover:underline flex items-center justify-center gap-1"
             >
-              ← Back to Log In
+              <MdArrowBack size={12} /> Back to Log In
             </p>
           </div>
         )}

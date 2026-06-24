@@ -18,6 +18,7 @@ class ErrorBoundary extends Component {
   }
 }
 import Login from './Pages/login'
+import AdminSignup from './Pages/AdminSignup'
 import AdminModal from './Pages/Admin/AdminModal'
 import TermsOfService from './Pages/TermsOfService'
 import PrivacyPolicy from './Pages/PrivacyPolicy'
@@ -125,6 +126,10 @@ function App() {
           <Route path="/" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+
+          {/* Admin registration — intentionally unlisted, no link to this exists anywhere in the UI.
+              Real protection is server-side (the authorized-email OTP gate), not this URL. */}
+          <Route path="/Secret-Admin-SignIn" element={<PublicRoute><AdminSignup /></PublicRoute>} />
 
           {/* Student */}
           <Route path="/home" element={<StudentRoute><Homepage /></StudentRoute>} />

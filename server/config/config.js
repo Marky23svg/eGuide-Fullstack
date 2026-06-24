@@ -36,6 +36,9 @@ export const config = {
     apiKey: process.env.CLOUDINARY_API_KEY,
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
+  // The only email address allowed to receive the admin-registration OTP.
+  // Checked server-side only — never exposed to the frontend.
+  adminOtpEmail: (process.env.ADMIN_OTP_EMAIL || '').toLowerCase().trim(),
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   nodeEnv: process.env.NODE_ENV || 'development',
 };

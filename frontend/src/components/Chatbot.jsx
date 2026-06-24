@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RiSendPlaneFill } from 'react-icons/ri';
 import { CgClose } from 'react-icons/cg';
+import { MdSearch, MdDescription, MdArrowForward } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { chatbot as chatbotApi } from '../services/api';
 
@@ -206,7 +207,7 @@ const Chatbot = () => {
                     {/* "Did you mean?" correction pill — shown above the bubble */}
                     {msg.sender === 'bot' && msg.correctedInterpretation && (
                       <div className="flex items-center gap-1.5 mb-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-full text-[11px] text-amber-700 max-w-[85%]">
-                        <span>🔍</span>
+                        <span><MdSearch size={13} /></span>
                         <span>
                           Did you mean: <span className="font-semibold">{msg.correctedInterpretation}</span>?
                         </span>
@@ -236,9 +237,9 @@ const Chatbot = () => {
                             onClick={() => handleViewDocument(src.id)}
                             className="flex items-center gap-2 px-3 py-2 bg-[#1a73e8] hover:bg-[#1557b0] text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
                           >
-                            <span>📄</span>
+                            <span><MdDescription size={14} /></span>
                             <span className="truncate">View: {src.title}</span>
-                            <span className="ml-auto">→</span>
+                            <span className="ml-auto"><MdArrowForward size={14} /></span>
                           </button>
                         ))}
                       </div>
